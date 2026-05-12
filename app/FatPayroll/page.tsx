@@ -4,29 +4,36 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Wallet, ClipboardList, FileSearch, LogOut, TrendingUp, CheckCircle2, 
-  XCircle, Search, Clock, AlertCircle, Users, Receipt, CalendarCheck, 
-  Banknote, Download, Info
+  XCircle, Search, Clock, Users, Receipt, CalendarCheck, 
+  Banknote, FileDown, ArrowUpRight, PieChart, 
+  Zap, FileSpreadsheet, Info, FileWarning
 } from "lucide-react";
 
-import { Montserrat } from "next/font/google";
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+// Menggunakan Plus Jakarta Sans agar senada dengan Kasir, Manager, dan Marketing
+import { Plus_Jakarta_Sans } from "next/font/google";
+const jakarta = Plus_Jakarta_Sans({ 
+  subsets: ["latin"], 
+  weight: ["400", "500", "600", "700", "800"] 
+});
 
-// Database Dummy Karyawan untuk Payroll
-const STAFF_DB = [
-  { id: "ST-001", name: "Siska", role: "Therapist", basicSalary: 3500000 },
-  { id: "ST-002", name: "Rina", role: "Therapist", basicSalary: 3500000 },
-  { id: "ST-003", name: "Amelia", role: "Cashier", basicSalary: 3200000 },
+// Data Dummy Pegawai (Payroll)
+const INITIAL_STAFF = [
+  { id: "EMP-01", name: "Siska", role: "Sr. Therapist", salary: 4200000, attend: 26, status: "pending" },
+  { id: "EMP-02", name: "Rina", role: "Jr. Therapist", salary: 3850000, attend: 24, status: "pending" },
+  { id: "EMP-03", name: "Elberth", role: "Head Cashier", salary: 3200000, attend: 25, status: "pending" },
 ];
 
 export default function FatPayrollDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState<"keuangan" | "payroll" | "log" | "void">("keuangan");
+  const [activeTab, setActiveTab] = useState<"keuangan" | "payroll" | "void">("keuangan");
+  
   const [orders, setOrders] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [staffList, setStaffList] = useState(INITIAL_STAFF);
+  
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [toast, setToast] = useState<{type: 'success' | 'error' | 'info', title: string, subtitle: string} | null>(null);
 
-  // --- KEAMANAN ---
   useEffect(() => {
     const isAuth = sessionStorage.getItem("isAuthenticated");
     const role = sessionStorage.getItem("userRole");
@@ -37,7 +44,6 @@ export default function FatPayrollDashboard() {
     }
   }, [router]);
 
-  // --- SINKRONISASI DATA REAL-TIME ---
   useEffect(() => {
     if (!isAuthorized) return;
     const sync = () => {
@@ -45,163 +51,320 @@ export default function FatPayrollDashboard() {
       if (saved) setOrders(JSON.parse(saved));
     };
     sync();
-    const interval = setInterval(sync, 1000);
+    const interval = setInterval(sync, 2000);
     return () => clearInterval(interval);
   }, [isAuthorized]);
 
-  // --- LOGIKA PERHITUNGAN FAT ---
-  const completed = orders.filter(o => o.status === "completed");
-  const voided = orders.filter(o => o.status === "voided");
-  const revenue = completed.reduce((sum, o) => sum + o.grandTotal, 0);
-  const potentialLoss = voided.reduce((sum, o) => sum + o.grandTotal, 0);
-
-  // Hitung Bonus Terapis (Misal 5% dari setiap treatment yang mereka tangani)
-  // Data therapist didapat dari database appointments (simulasi)
-  const calculateCommission = (staffName: string) => {
-    // Simulasi: Terapis mendapatkan 50rb per treatment yang completed
-    return 50000 * Math.floor(Math.random() * 10); // Hanya simulasi visual
+  const showToast = (type: 'success' | 'error' | 'info', title: string, subtitle: string) => {
+    setToast({ type, title, subtitle });
+    setTimeout(() => setToast(null), 3000);
   };
+
+  const handlePayStaff = (id: string) => {
+    setStaffList(prev => prev.map(s => s.id === id ? { ...s, status: "paid" } : s));
+    showToast("success", "Pembayaran Sukses", "Gaji staf telah berhasil dicairkan dan dicatat dalam buku kas.");
+  };
+
+  const completedOrders = orders.filter(o => o.status === "completed");
+  const voidedOrders = orders.filter(o => o.status === "voided");
+  const revenue = completedOrders.reduce((sum, o) => sum + o.grandTotal, 0);
+  const potentialLoss = voidedOrders.reduce((sum, o) => sum + o.grandTotal, 0);
 
   if (!isAuthorized) return null;
 
   return (
-    <div className={`flex h-screen bg-[#FDFBFB] font-sans text-slate-700 overflow-hidden ${montserrat.className}`}>
+    <div className={`flex h-screen bg-[#F4F7FA] text-slate-800 overflow-hidden ${jakarta.className}`}>
       
-      {/* MODAL LOGOUT */}
-      {showLogoutConfirm && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center animate-in fade-in">
-          <div className="bg-white p-8 rounded-[2rem] w-[380px] shadow-2xl border border-pink-50 text-center animate-in zoom-in-95">
-             <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><LogOut size={32} className="text-rose-400" /></div>
-             <h2 className="text-xl font-bold mb-2 text-slate-800">Akhiri Sesi?</h2>
-             <p className="text-sm text-slate-500 mb-8">Anda akan keluar dari sistem FAT.</p>
-             <div className="flex gap-3">
-               <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-3.5 rounded-2xl font-semibold bg-slate-100 text-slate-500">Batal</button>
-               <button onClick={() => { sessionStorage.clear(); router.push("/"); }} className="flex-1 py-3.5 rounded-2xl font-semibold bg-rose-500 text-white shadow-lg shadow-rose-200">Keluar</button>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* SIDEBAR FAT (IDENTIK DENGAN MANAGER/CASHIER) */}
-      <div className="w-72 bg-white flex flex-col h-full border-r border-pink-50 z-20 shadow-[4px_0_24px_rgba(252,165,165,0.1)]">
-        <div className="p-8 border-b border-pink-50 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-pink-600 to-rose-500 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg shadow-pink-100 mb-4">F</div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">FAT Dashboard</h1>
-          <p className="text-[10px] font-bold text-pink-400 mt-1 uppercase tracking-widest leading-relaxed">Finance & Payroll<br/>Administration</p>
+      {/* SIDEBAR - CLEAN WHITE (Senada dengan Kasir & Manager) */}
+      <aside className="w-[260px] bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20">
+        
+        {/* LOGO AREA */}
+        <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0">
+          <img 
+            src="image_b6c0b9.png" 
+            alt="Logo" 
+            className="w-10 h-10 mr-3 object-contain drop-shadow-sm" 
+          />
+          <span className="font-extrabold text-slate-800 text-xl tracking-tight">
+            FAT<span className="text-[#FF0055]">.</span>
+          </span>
         </div>
 
-        <div className="flex-1 py-6 space-y-1 px-6 overflow-y-auto">
+        {/* NAVIGATION */}
+        <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto">
+          <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Finance & Tax</p>
           {[
-            { id: "keuangan", icon: TrendingUp, label: "Arus Kas Live" },
-            { id: "payroll", icon: Banknote, label: "Gaji & Absensi" },
-            { id: "log", icon: ClipboardList, label: "Log Transaksi" },
-            { id: "void", icon: FileSearch, label: "Audit Void", count: voided.length },
+            { id: "keuangan", icon: Wallet, label: "Laporan Keuangan" },
+            { id: "payroll", icon: Banknote, label: "Payroll & Gaji" },
+            { id: "void", icon: FileSearch, label: "Audit Pembatalan" },
           ].map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-semibold transition-all ${activeTab === tab.id ? "bg-pink-50 text-pink-600 shadow-sm border border-pink-100" : "text-slate-400 hover:text-pink-500 hover:bg-pink-50/30"}`}>
-              <div className="flex items-center gap-3"><tab.icon size={20} /> {tab.label}</div>
-              {tab.count ? <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{tab.count}</span> : null}
+            <button 
+              key={tab.id} 
+              onClick={() => setActiveTab(tab.id as any)} 
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-bold text-sm ${
+                activeTab === tab.id 
+                  ? "bg-[#FF0055] text-white shadow-lg shadow-rose-500/25"
+                  : "bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              <tab.icon size={18} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? "text-white" : "text-slate-400"} />
+              <span>{tab.label}</span>
             </button>
           ))}
-        </div>
+        </nav>
 
-        <div className="p-6 border-t border-pink-50 bg-white">
-          <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex justify-center items-center gap-2 bg-white border border-slate-200 text-slate-400 py-3.5 rounded-xl text-xs uppercase tracking-widest font-bold hover:text-rose-50 hover:border-rose-200 transition-all cursor-pointer"><LogOut size={16} /> Keluar</button>
+        {/* USER PROFILE & LOGOUT */}
+        <div className="p-6 border-t border-slate-100 shrink-0">
+          <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
+            <LogOut size={18} />
+            <span>Keluar Sistem</span>
+          </button>
         </div>
-      </div>
+      </aside>
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative bg-[#FDFBFB]">
-        <div className="flex justify-between items-end mb-10 pb-6 border-b border-pink-100">
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA]">
+        
+        {/* HEADER SAAS CLEAN */}
+        <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
           <div>
-            <h2 className="text-3xl font-black text-slate-800 tracking-tight capitalize">Portal {activeTab === "keuangan" ? "Keuangan" : activeTab === "payroll" ? "Gaji & Absensi" : activeTab}</h2>
-            <p className="text-slate-500 font-medium mt-2">Pusat data finansial Klinik Rosereve Japan.</p>
+            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight capitalize">
+               {activeTab === "keuangan" ? "Arus Kas & Keuangan" : activeTab === "payroll" ? "Manajemen Penggajian (Payroll)" : "Audit Kas & Pembatalan"}
+            </h1>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+               Departemen Keuangan & HRD
+            </p>
           </div>
-          {activeTab === "payroll" && (
-            <button className="flex items-center gap-2 bg-pink-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-pink-700 transition-all shadow-lg shadow-pink-100 uppercase tracking-widest"><Download size={16}/> Export Payroll</button>
+          <div className="flex items-center gap-4">
+             <div className="bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 flex items-center gap-3 shadow-sm">
+                <span className="text-[12px] font-bold text-slate-700 tracking-wide">Periode: {new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' })}</span>
+             </div>
+             <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center font-bold text-[#FF0055] text-sm">F</div>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-hidden">
+          
+          {/* TAB 1: KEUANGAN (REVENUE) */}
+          {activeTab === "keuangan" && (
+            <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300">
+               
+               <div className="flex justify-end gap-3 mb-6">
+                  <button onClick={() => showToast("success", "Export Buku Kas", "Data kas sedang diunduh (Excel).")} className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-sm">
+                     <FileSpreadsheet size={16} /> Export Buku Kas (XLS)
+                  </button>
+               </div>
+
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
+                     <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-8">
+                           <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500">
+                              <Zap size={24} />
+                           </div>
+                           <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Total Pendapatan Kotor</p>
+                        </div>
+                        <h3 className="text-5xl font-black text-slate-900 tracking-tighter mb-8">
+                           Rp {revenue.toLocaleString('id-ID')}
+                        </h3>
+                        <div className="flex gap-10 pt-6 border-t border-slate-100">
+                           <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Pertumbuhan</p>
+                              <div className="flex items-center text-emerald-500 font-black text-lg"><ArrowUpRight size={20} className="mr-1"/> 24.5%</div>
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Volume Transaksi</p>
+                              <div className="text-slate-800 font-black text-lg">{completedOrders.length} Struk</div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-lg relative overflow-hidden text-white flex flex-col justify-between">
+                     <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-8">
+                           <div className="w-12 h-12 bg-rose-500/20 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/30">
+                              <XCircle size={24} />
+                           </div>
+                           <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Potensi Kehilangan (Void)</p>
+                        </div>
+                        <h3 className="text-4xl font-black text-white tracking-tighter mb-4">
+                           Rp {potentialLoss.toLocaleString('id-ID')}
+                        </h3>
+                        <p className="text-slate-400 text-xs font-medium">Nilai uang dari {voidedOrders.length} transaksi yang dibatalkan oleh kasir hari ini.</p>
+                     </div>
+                     <button onClick={() => setActiveTab("void")} className="w-full mt-6 py-4 bg-white text-slate-900 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-[#FF0055] hover:text-white transition-all shadow-sm">
+                        Audit Pembatalan
+                     </button>
+                  </div>
+               </div>
+
+               {/* Transaksi Terbaru (Mini Laporan) */}
+               <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-8 border-b border-slate-100 bg-white">
+                     <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-widest">Catatan Transaksi Masuk Terakhir</h3>
+                  </div>
+                  <div className="p-6">
+                     {completedOrders.length === 0 ? (
+                        <p className="text-center text-sm font-semibold text-slate-400 py-6">Belum ada dana masuk.</p>
+                     ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                           {completedOrders.slice(0, 6).map((o) => (
+                             <div key={o.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                               <div>
+                                  <p className="font-black text-slate-800 text-sm">{o.id}</p>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{o.time}</p>
+                               </div>
+                               <p className="font-black text-[#FF0055] text-[15px]">Rp {o.grandTotal.toLocaleString()}</p>
+                             </div>
+                           ))}
+                        </div>
+                     )}
+                  </div>
+               </div>
+            </div>
           )}
+
+          {/* TAB 2: PAYROLL & GAJI */}
+          {activeTab === "payroll" && (
+            <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300 bg-[#F4F7FA]">
+               <div className="flex justify-between items-center mb-8">
+                  <p className="text-[11px] font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl">Jadwal Penggajian: Tanggal 25 Setiap Bulan</p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {staffList.map((staff) => (
+                     <div key={staff.id} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col group">
+                        <div className="flex items-center gap-5 mb-8">
+                           <div className="w-16 h-16 bg-slate-100 rounded-[1.25rem] flex items-center justify-center font-black text-slate-400 text-2xl group-hover:bg-[#FF0055] group-hover:text-white transition-colors duration-300 shadow-sm border border-slate-200">
+                              {staff.name[0]}
+                           </div>
+                           <div>
+                              <h3 className="text-lg font-black text-slate-800 tracking-tight">{staff.name}</h3>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{staff.role}</span>
+                           </div>
+                        </div>
+                        
+                        <div className="space-y-4 mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                           <div className="flex justify-between text-sm items-center">
+                              <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Absensi/Hadir</span>
+                              <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{staff.attend}/26 Hari</span>
+                           </div>
+                           <div className="flex justify-between items-end pt-2 border-t border-slate-200/60">
+                              <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Take Home Pay</span>
+                              <span className="font-black text-xl text-slate-900">Rp {staff.salary.toLocaleString()}</span>
+                           </div>
+                        </div>
+                        
+                        <div className="mt-auto">
+                           {staff.status === "paid" ? (
+                              <div className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 border border-emerald-100">
+                                 <CheckCircle2 size={16}/> Telah Dibayarkan
+                              </div>
+                           ) : (
+                              <button onClick={() => handlePayStaff(staff.id)} className="w-full py-4 bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
+                                 Konfirmasi Pencairan
+                              </button>
+                           )}
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+          )}
+
+          {/* TAB 3: AUDIT PEMBATALAN (VOID LOGS) */}
+          {activeTab === "void" && (
+            <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300 bg-[#F4F7FA]">
+               <div className="flex justify-between items-center mb-8">
+                  <div>
+                     <h2 className="text-xl font-extrabold text-slate-800">Catatan Investigasi Pembatalan</h2>
+                     <p className="text-xs font-semibold text-slate-500 mt-1">Laporan transaksi gagal yang telah diotorisasi Manager.</p>
+                  </div>
+                  <button onClick={() => showToast("success", "Laporan PDF Siap", "Laporan audit sedang diunduh.")} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
+                     <FileDown size={16} /> Unduh Bukti PDF
+                  </button>
+               </div>
+
+               <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden h-[70vh] flex flex-col">
+                  {voidedOrders.length === 0 ? (
+                     <div className="flex flex-col items-center justify-center flex-1 text-slate-300">
+                        <FileWarning size={64} className="mb-4 opacity-30" strokeWidth={1.5} />
+                        <p className="font-bold tracking-[0.2em] uppercase text-xs opacity-70">Aman! Tidak ada indikasi pembatalan.</p>
+                     </div>
+                  ) : (
+                     <div className="flex-1 overflow-y-auto">
+                        <table className="w-full text-left">
+                           <thead className="sticky top-0 bg-slate-50 border-b border-slate-100 z-10">
+                              <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                                 <th className="px-8 py-5">Identitas Nota</th>
+                                 <th className="px-8 py-5">Isi Pesanan (Varian)</th>
+                                 <th className="px-8 py-5 text-right">Nilai Tagihan (Minus)</th>
+                                 <th className="px-8 py-5">Keterangan Otorisasi</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-100">
+                              {voidedOrders.map((order, idx) => (
+                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-8 py-6">
+                                       <span className="font-black text-rose-500 bg-rose-50 px-2.5 py-1 rounded text-[12px]">{order.id}</span>
+                                       <p className="text-[10px] font-bold text-slate-400 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time}</p>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                       <div className="space-y-1">
+                                          {order.items.map((it:any, i:number) => (
+                                             <p key={i} className="text-xs font-bold text-slate-600">{it.qty}x {it.name} <span className="font-medium text-slate-400">({it.variant || 'Normal'})</span></p>
+                                          ))}
+                                       </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-right font-black text-slate-800 text-[15px]">
+                                       - Rp {order.grandTotal.toLocaleString()}
+                                    </td>
+                                    <td className="px-8 py-6">
+                                       <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg inline-block mb-1">VOID / BATAL</span>
+                                       <p className="text-[10px] font-bold text-slate-400 italic mt-1">Alasan: "{order.voidReason || 'Ditolak Manager'}"</p>
+                                    </td>
+                                 </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                     </div>
+                  )}
+               </div>
+            </div>
+          )}
+
         </div>
 
-        {/* --- TAB KEUANGAN --- */}
-        {activeTab === "keuangan" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-300">
-            <div className="bg-white p-8 rounded-[2rem] border border-white shadow-sm flex flex-col hover:shadow-pink-100 transition-all">
-              <div className="p-4 bg-emerald-50 text-emerald-500 rounded-3xl w-max mb-6"><TrendingUp size={32}/></div>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Total Kas Masuk (Live)</p>
-              <h3 className="text-3xl font-black text-slate-800">Rp {revenue.toLocaleString('id-ID')}</h3>
-            </div>
-            <div className="bg-white p-8 rounded-[2rem] border border-white shadow-sm flex flex-col hover:shadow-pink-100 transition-all">
-              <div className="p-4 bg-rose-50 text-rose-500 rounded-3xl w-max mb-6"><XCircle size={32}/></div>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Loss (Voided Value)</p>
-              <h3 className="text-3xl font-black text-rose-600">Rp {potentialLoss.toLocaleString('id-ID')}</h3>
-            </div>
-            <div className="bg-white p-8 rounded-[2rem] border border-white shadow-sm flex flex-col hover:shadow-pink-100 transition-all">
-              <div className="p-4 bg-pink-50 text-pink-500 rounded-3xl w-max mb-6"><Receipt size={32}/></div>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Total Transaksi Selesai</p>
-              <h3 className="text-3xl font-black text-slate-800">{completed.length} <span className="text-sm font-bold text-slate-400">Invoice</span></h3>
-            </div>
-          </div>
+        {/* MODAL LOGOUT CONFIRM */}
+        {showLogoutConfirm && (
+           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-in fade-in">
+             <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center border border-slate-100">
+                <div className="w-20 h-20 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><LogOut size={36}/></div>
+                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar Sistem?</h2>
+                <p className="text-[12px] font-bold text-slate-500 mb-10 leading-relaxed uppercase tracking-wider">Anda akan keluar dari Portal Keuangan.</p>
+                <div className="flex gap-4">
+                  <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
+                  <button onClick={() => { sessionStorage.clear(); router.push("/"); }} className="flex-1 py-4 rounded-2xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-widest shadow-xl shadow-rose-500/20">Keluar</button>
+                </div>
+             </div>
+           </div>
         )}
 
-        {/* --- TAB PAYROLL & ABSENSI (FITUR UTAMA BARU) --- */}
-        {activeTab === "payroll" && (
-          <div className="bg-white rounded-[2.5rem] border border-white shadow-sm overflow-hidden animate-in fade-in">
-            <table className="w-full text-left">
-              <thead className="bg-pink-50/20 border-b border-slate-50"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-6">Data Karyawan</th><th className="p-6">Status Absensi</th><th className="p-6 text-right">Gaji Pokok</th><th className="p-6 text-right">Bonus/Insentif</th><th className="p-6 text-right">Take Home Pay</th></tr></thead>
-              <tbody className="divide-y divide-slate-50">
-                {STAFF_DB.map((staff) => (
-                  <tr key={staff.id} className="hover:bg-pink-50/10 transition-colors group">
-                    <td className="p-6">
-                      <p className="text-base font-bold text-slate-800">{staff.name}</p>
-                      <p className="text-[10px] font-bold text-pink-500 uppercase">{staff.role} • {staff.id}</p>
-                    </td>
-                    <td className="p-6">
-                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg w-max border border-emerald-100"><CalendarCheck size={14}/> Hadir: 24/26 Hari</div>
-                    </td>
-                    <td className="p-6 text-right font-bold text-slate-600">Rp {staff.basicSalary.toLocaleString()}</td>
-                    <td className="p-6 text-right">
-                      <div className="text-sm font-bold text-emerald-500">+ Rp {calculateCommission(staff.name).toLocaleString()}</div>
-                      <p className="text-[9px] text-slate-400">Berdasarkan Performance</p>
-                    </td>
-                    <td className="p-6 text-right">
-                      <p className="text-lg font-black text-slate-800">Rp {(staff.basicSalary + calculateCommission(staff.name)).toLocaleString()}</p>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* --- TAB LOG & VOID --- */}
-        {(activeTab === "log" || activeTab === "void") && (
-          <div className="bg-white rounded-[2.5rem] border border-white shadow-sm overflow-hidden animate-in fade-in duration-300">
-            <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-              <div className="relative group w-72">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-300" size={16} />
-                <input type="text" placeholder="Cari ID Transaksi..." value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-pink-100 transition-all" />
+        {/* TOAST NOTIFICATION */}
+        {toast && (
+          <div className="fixed bottom-8 right-8 z-[1000] animate-in slide-in-from-bottom-5">
+            <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[320px] border ${toast.type === 'error' ? 'bg-rose-50 border-rose-200' : 'bg-slate-900 border-slate-800'}`}>
+              {toast.type === 'success' ? <CheckCircle2 className="text-emerald-400" size={24} /> : toast.type === 'error' ? <XCircle className="text-rose-500" size={24} /> : <Info className="text-blue-400" size={24} />}
+              <div>
+                <h4 className={`font-bold text-[13px] tracking-wide mb-0.5 ${toast.type === 'error' ? 'text-rose-700' : 'text-white'}`}>{toast.title}</h4>
+                <p className={`text-[11px] font-medium ${toast.type === 'error' ? 'text-rose-500' : 'text-slate-400'}`}>{toast.subtitle}</p>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: {(activeTab === "log" ? orders : voided).length} Data</p>
             </div>
-            <table className="w-full text-left">
-              <thead className="bg-pink-50/20 border-b border-slate-50"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-6">ID & Waktu</th><th className="p-6">Pelanggan</th><th className="p-6">Status Keuangan</th><th className="p-6 text-right">Nominal</th></tr></thead>
-              <tbody className="divide-y divide-slate-50">
-                {(activeTab === "log" ? orders : voided).filter(o => o.id.toLowerCase().includes(searchQuery.toLowerCase())).map((o) => (
-                  <tr key={o.id} className="hover:bg-pink-50/10 transition-colors">
-                    <td className="p-6 font-bold text-slate-800"><div>{o.id}</div><div className="text-[10px] text-slate-400 font-medium">{o.time}</div></td>
-                    <td className="p-6 text-sm font-bold text-slate-600">{o.member ? o.member.name : "Pelanggan Umum"}</td>
-                    <td className="p-6">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border ${o.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                        {o.status === 'completed' ? <CheckCircle2 size={12}/> : <XCircle size={12}/>} {o.status}
-                      </span>
-                    </td>
-                    <td className="p-6 text-right font-black text-slate-800 text-lg">Rp {o.grandTotal.toLocaleString('id-ID')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
-      </div>
+
+      </main>
     </div>
   );
 }

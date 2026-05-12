@@ -4,14 +4,16 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Lock, User, EyeOff, Eye, ShieldCheck, 
-  AlertCircle, Sparkles, Mail, ArrowLeft, CheckCircle2 
+  AlertCircle, Sparkles, Mail, ArrowLeft, CheckCircle2, Loader2
 } from "lucide-react";
 
-// --- MENGGUNAKAN FONT MONTSERRAT & PLAYFAIR ---
-import { Montserrat, Playfair_Display } from "next/font/google";
+// --- MENGGUNAKAN FONT YANG SAMA DENGAN KASIR ---
+import { Plus_Jakarta_Sans } from "next/font/google";
 
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["700", "900"] });
+const jakarta = Plus_Jakarta_Sans({ 
+  subsets: ["latin"], 
+  weight: ["400", "500", "600", "700", "800"] 
+});
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,12 +50,11 @@ export default function LoginPage() {
         sessionStorage.setItem("userRole", "fat");
         router.push("/FatPayroll");
       } else if (user === "marketing" && password === "123") {
-        // --- AKSES BARU: MARKETING ---
         sessionStorage.setItem("isAuthenticated", "true");
         sessionStorage.setItem("userRole", "marketing");
         router.push("/Marketing");
       } else {
-        setError("Username atau password salah. (Coba: kasir / manager / fat / marketing)");
+        setError("Username atau password salah.");
         setIsLoading(false);
       }
     }, 1500); 
@@ -78,28 +79,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-pink-50 flex flex-col items-center justify-center p-6 selection:bg-pink-200 relative overflow-hidden ${montserrat.className}`}>
+    <div className={`min-h-screen bg-[#FFF5F7] flex flex-col items-center justify-center p-6 relative overflow-hidden ${jakarta.className}`}>
       
-      <div className="absolute top-0 -left-20 w-96 h-96 bg-pink-200/40 rounded-full blur-3xl opacity-60 animate-pulse"></div>
-      <div className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-pink-300/20 rounded-full blur-3xl opacity-60"></div>
+      {/* Background Ornaments */}
+      <div className="absolute top-0 -left-20 w-[500px] h-[500px] bg-white rounded-full blur-3xl opacity-80"></div>
+      <div className="absolute bottom-0 -right-20 w-[600px] h-[600px] bg-rose-100/40 rounded-full blur-3xl opacity-60"></div>
 
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl shadow-pink-200/50 border border-white p-10 relative z-10 overflow-hidden">
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-[0_20px_60px_rgba(255,0,85,0.05)] border-2 border-white p-10 relative z-10">
         
+        {/* LOGO & HEADER */}
         <div className="flex flex-col items-center justify-center mb-10">
-          <div className="w-20 h-20 bg-pink-600 text-white rounded-3xl flex items-center justify-center mb-5 shadow-xl shadow-pink-200 ring-8 ring-pink-50">
-            <ShieldCheck size={40} />
+          <div className="w-20 h-20 bg-[#FF0055] text-white rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl shadow-rose-500/30">
+            <ShieldCheck size={40} strokeWidth={2} />
           </div>
-          <h1 className={`text-4xl text-pink-950 flex items-center gap-2 ${playfair.className}`}>
-            SkinPOS <Sparkles className="text-pink-400" size={24} />
+          <h1 className="text-4xl font-[800] text-slate-900 tracking-tight flex items-center gap-2 mb-2">
+            SkinPOS <Sparkles className="text-[#FF0055]" size={28} />
           </h1>
-          <p className="text-pink-500 text-xs font-bold uppercase tracking-[0.2em] mt-3 text-center leading-relaxed">
+          <p className="text-[#FF0055] text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
             Esthetic Rosereve Japan <br/> Operasional Terpadu
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-rose-50 border border-rose-100 text-rose-500 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm font-bold shadow-sm">
-            <AlertCircle size={18} className="shrink-0" />
+          <div className="mb-6 bg-rose-50 border border-rose-100 text-[#FF0055] px-5 py-4 rounded-2xl flex items-center gap-3 text-[13px] font-bold shadow-sm animate-in fade-in">
+            <AlertCircle size={20} className="shrink-0" />
             {error}
           </div>
         )}
@@ -110,47 +113,47 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-5">
               
               <div className="space-y-2">
-                <label className="text-[10px] font-extrabold text-pink-500 uppercase tracking-widest ml-1">Username Akses</label>
+                <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Username Akses</label>
                 <div className="relative group">
-                  <User size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 group-focus-within:text-pink-600 transition-colors" />
+                  <User size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-[#FF0055] transition-colors" />
                   <input 
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Masukkan username Anda" 
-                    className="w-full bg-white border border-pink-100 text-slate-800 px-12 py-4 rounded-2xl outline-none focus:ring-4 focus:ring-pink-100 focus:border-pink-400 transition-all font-medium placeholder:font-normal placeholder:text-pink-300 shadow-sm"
+                    className="w-full bg-white border-2 border-pink-50 text-slate-800 pl-14 pr-5 py-4 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-rose-50 focus:border-[#FF0055] transition-all font-bold placeholder:font-medium placeholder:text-pink-200 shadow-[0_2px_10px_rgba(255,0,85,0.02)]"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-extrabold text-pink-500 uppercase tracking-widest ml-1">Kunci Password</label>
+                <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Kunci Password</label>
                 <div className="relative group">
-                  <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 group-focus-within:text-pink-600 transition-colors" />
+                  <Lock size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-[#FF0055] transition-colors" />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Masukkan kata sandi Anda" 
-                    className="w-full bg-white border border-pink-100 text-slate-800 pl-12 pr-14 py-4 rounded-2xl outline-none focus:ring-4 focus:ring-pink-100 focus:border-pink-400 transition-all font-medium tracking-wide placeholder:font-normal placeholder:tracking-normal placeholder:text-pink-300 shadow-sm"
+                    className="w-full bg-white border-2 border-pink-50 text-slate-800 pl-14 pr-14 py-4 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-rose-50 focus:border-[#FF0055] transition-all font-bold tracking-wide placeholder:font-medium placeholder:tracking-normal placeholder:text-pink-200 shadow-[0_2px_10px_rgba(255,0,85,0.02)]"
                     required
                   />
                   <button 
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-600 transition-colors p-1"
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-pink-200 hover:text-[#FF0055] transition-colors p-1"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end pt-1 pb-2">
+              <div className="flex items-center justify-end mt-1 mb-6">
                 <button 
                   type="button" 
                   onClick={() => setView("forgot")}
-                  className="text-xs font-semibold text-pink-500 hover:text-pink-700 hover:underline transition-all"
+                  className="text-[11px] font-bold text-[#FF0055] hover:text-[#D40048] hover:underline transition-all"
                 >
                   Lupa Password?
                 </button>
@@ -159,14 +162,14 @@ export default function LoginPage() {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className={`w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 ${
+                className={`w-full py-5 rounded-[1.5rem] font-black text-[13px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 transition-all ${
                   isLoading 
-                    ? "bg-pink-300 text-white cursor-wait shadow-pink-200" 
-                    : "bg-pink-600 text-white hover:bg-pink-700 hover:shadow-pink-300"
+                    ? "bg-pink-100 text-pink-400 cursor-not-allowed" 
+                    : "bg-[#FF0055] text-white hover:bg-[#D40048] shadow-xl shadow-rose-500/25 hover:-translate-y-0.5"
                 }`}
               >
                 {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                  <Loader2 size={22} className="animate-spin" />
                 ) : (
                   "Masuk"
                 )}
@@ -178,25 +181,25 @@ export default function LoginPage() {
         {/* --- FORM LUPA PASSWORD --- */}
         {view === "forgot" && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-black text-pink-950 mb-2">Lupa Password?</h2>
-              <p className="text-sm font-medium text-pink-500 leading-relaxed">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-black text-slate-800 mb-2">Lupa Password?</h2>
+              <p className="text-[12px] font-semibold text-slate-500 leading-relaxed px-2">
                 Jangan khawatir. Masukkan username atau email Anda, kami akan mengirimkan instruksi ke IT Support.
               </p>
             </div>
 
             {!resetSuccess ? (
-              <form onSubmit={handleResetPassword} className="space-y-5">
+              <form onSubmit={handleResetPassword} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-extrabold text-pink-500 uppercase tracking-widest ml-1">Email / Username</label>
+                  <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Email / Username</label>
                   <div className="relative group">
-                    <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 group-focus-within:text-pink-600 transition-colors" />
+                    <Mail size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-[#FF0055] transition-colors" />
                     <input 
                       type="text" 
                       value={resetInput}
                       onChange={(e) => setResetInput(e.target.value)}
-                      placeholder="contoh: marketing / help@skinpos.com" 
-                      className="w-full bg-white border border-pink-100 text-slate-800 px-12 py-4 rounded-2xl outline-none focus:ring-4 focus:ring-pink-100 focus:border-pink-400 transition-all font-medium placeholder:font-normal placeholder:text-pink-300 shadow-sm"
+                      placeholder="contoh: help@skinpos.com" 
+                      className="w-full bg-white border-2 border-pink-50 text-slate-800 pl-14 pr-5 py-4 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-rose-50 focus:border-[#FF0055] transition-all font-bold placeholder:font-medium placeholder:text-pink-200 shadow-[0_2px_10px_rgba(255,0,85,0.02)]"
                       required
                     />
                   </div>
@@ -205,55 +208,58 @@ export default function LoginPage() {
                 <button 
                   type="submit" 
                   disabled={isLoading}
-                  className={`w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 ${
+                  className={`w-full py-5 rounded-[1.5rem] font-black text-[13px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 transition-all ${
                     isLoading 
-                      ? "bg-pink-300 text-white cursor-wait shadow-pink-200" 
-                      : "bg-pink-950 text-white hover:bg-black hover:shadow-pink-300"
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-slate-800 text-white hover:bg-slate-900 shadow-xl shadow-slate-200 hover:-translate-y-0.5"
                   }`}
                 >
                   {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                    <Loader2 size={22} className="animate-spin" />
                   ) : (
-                    "Kirim Permintaan Reset"
+                    "Kirim Permintaan"
                   )}
                 </button>
               </form>
             ) : (
-              <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl text-center shadow-sm">
-                <CheckCircle2 size={40} className="text-emerald-500 mx-auto mb-3" />
-                <h3 className="font-black text-emerald-900 mb-1">Permintaan Terkirim!</h3>
-                <p className="text-sm font-medium text-emerald-700">
-                  Sistem telah mencatat permintaan reset untuk <span className="font-bold">{resetInput}</span>. Silakan hubungi Manager Anda.
+              <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[1.5rem] text-center shadow-sm animate-in zoom-in-95">
+                <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" strokeWidth={1.5} />
+                <h3 className="font-black text-emerald-900 mb-2 text-lg">Permintaan Terkirim!</h3>
+                <p className="text-[12px] font-bold text-emerald-700 leading-relaxed">
+                  Sistem telah mencatat permintaan reset untuk <br/><span className="text-emerald-900 px-2 py-1 bg-emerald-100/50 rounded inline-block mt-2">{resetInput}</span>
                 </p>
               </div>
             )}
 
             <button 
               onClick={backToLogin}
-              className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-bold text-pink-500 hover:text-pink-700 transition-colors p-2"
+              className="mt-8 w-full flex items-center justify-center gap-2 text-[12px] font-bold text-slate-400 hover:text-[#FF0055] transition-colors p-2"
             >
               <ArrowLeft size={16} /> Kembali ke Halaman Login
             </button>
           </div>
         )}
 
-        <p className="text-center text-[10px] font-semibold text-pink-400 mt-10 uppercase tracking-widest leading-relaxed border-t border-pink-100 pt-6">
-          Mengalami Masalah Sistem? <br/>
-          <button 
-            onClick={() => {
-              window.open("https://mail.google.com/mail/?view=cm&fs=1&to=skinpos.helpdesk@gmail.com&su=Laporan%20Kendala%20SkinPOS", "_blank");
-            }}
-            className="text-pink-600 font-bold cursor-pointer hover:underline bg-transparent border-none p-0 mt-1"
-          >
-            Hubungi IT Support Admin
-          </button>
-        </p>
+        {/* FOOTER BANTUAN */}
+        <div className="mt-8 pt-6 border-t border-pink-50/50 text-center">
+          <p className="text-[10px] font-bold text-pink-300 uppercase tracking-widest leading-relaxed">
+            Mengalami Masalah Sistem? <br/>
+            <button 
+              onClick={() => {
+                window.open("https://mail.google.com/mail/?view=cm&fs=1&to=skinpos.helpdesk@gmail.com&su=Laporan%20Kendala%20SkinPOS", "_blank");
+              }}
+              className="text-[#FF0055] font-black cursor-pointer hover:text-[#D40048] hover:underline bg-transparent border-none p-0 mt-1.5 transition-colors"
+            >
+              Hubungi IT Support Admin
+            </button>
+          </p>
+        </div>
 
       </div>
 
       <div className="absolute bottom-6 text-center z-10">
-        <p className="text-[10px] font-bold text-pink-400/80 uppercase tracking-widest">
-          SkinPOS System v.2.4.0 • Secured Portal
+        <p className="text-[9px] font-bold text-pink-300 uppercase tracking-[0.2em]">
+          SkinPOS System V.2.4.0 • Secured Portal
         </p>
       </div>
 
