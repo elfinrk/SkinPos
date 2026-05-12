@@ -7,7 +7,7 @@ import {
   LogOut, CheckCircle2, Clock, RefreshCw, LockKeyhole,
   XCircle, Trash2, History, Info, FileWarning, HelpCircle,
   FileDown, FileSpreadsheet, Flame, ClipboardList, UsersRound, 
-  CalendarRange, UserPlus, UserCheck // <-- UserCheck sudah ditambahkan di sini
+  CalendarRange, UserPlus, UserCheck, AlertTriangle // <-- AlertTriangle ditambahkan di sini
 } from "lucide-react";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
