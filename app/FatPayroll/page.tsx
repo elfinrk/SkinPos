@@ -9,18 +9,16 @@ import {
   Zap, FileSpreadsheet, Info, FileWarning
 } from "lucide-react";
 
-// Menggunakan Plus Jakarta Sans agar senada dengan Kasir, Manager, dan Marketing
 import { Plus_Jakarta_Sans } from "next/font/google";
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ["latin"], 
   weight: ["400", "500", "600", "700", "800"] 
 });
 
-// Data Dummy Pegawai (Payroll)
 const INITIAL_STAFF = [
-  { id: "EMP-01", name: "Siska", role: "Sr. Therapist", salary: 4200000, attend: 26, status: "pending" },
-  { id: "EMP-02", name: "Rina", role: "Jr. Therapist", salary: 3850000, attend: 24, status: "pending" },
-  { id: "EMP-03", name: "Elberth", role: "Head Cashier", salary: 3200000, attend: 25, status: "pending" },
+  { id: "EMP-01", name: "Siska", role: "Terapis Senior", salary: 4200000, attend: 26, status: "pending" },
+  { id: "EMP-02", name: "Rina", role: "Terapis Junior", salary: 3850000, attend: 24, status: "pending" },
+  { id: "EMP-03", name: "Elberth", role: "Kepala Kasir", salary: 3200000, attend: 25, status: "pending" },
 ];
 
 export default function FatPayrollDashboard() {
@@ -75,7 +73,7 @@ export default function FatPayrollDashboard() {
   return (
     <div className={`flex h-screen bg-[#F4F7FA] text-slate-800 overflow-hidden ${jakarta.className}`}>
       
-      {/* SIDEBAR - CLEAN WHITE (Senada dengan Kasir & Manager) */}
+      {/* SIDEBAR */}
       <aside className="w-[260px] bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20">
         
         {/* LOGO AREA */}
@@ -92,10 +90,10 @@ export default function FatPayrollDashboard() {
 
         {/* NAVIGATION */}
         <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto">
-          <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Finance & Tax</p>
+          <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Keuangan & Pajak</p>
           {[
             { id: "keuangan", icon: Wallet, label: "Laporan Keuangan" },
-            { id: "payroll", icon: Banknote, label: "Payroll & Gaji" },
+            { id: "payroll", icon: Banknote, label: "Penggajian" },
             { id: "void", icon: FileSearch, label: "Audit Pembatalan" },
           ].map((tab) => (
             <button 
@@ -117,7 +115,7 @@ export default function FatPayrollDashboard() {
         <div className="p-6 border-t border-slate-100 shrink-0">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
             <LogOut size={18} />
-            <span>Keluar Sistem</span>
+            <span>Keluar</span>
           </button>
         </div>
       </aside>
@@ -125,11 +123,11 @@ export default function FatPayrollDashboard() {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA]">
         
-        {/* HEADER SAAS CLEAN */}
+        {/* HEADER */}
         <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
           <div>
             <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight capitalize">
-               {activeTab === "keuangan" ? "Arus Kas & Keuangan" : activeTab === "payroll" ? "Manajemen Penggajian (Payroll)" : "Audit Kas & Pembatalan"}
+               {activeTab === "keuangan" ? "Arus Kas & Keuangan" : activeTab === "payroll" ? "Manajemen Penggajian" : "Audit Kas & Pembatalan"}
             </h1>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                Departemen Keuangan & HRD
@@ -150,8 +148,8 @@ export default function FatPayrollDashboard() {
             <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300">
                
                <div className="flex justify-end gap-3 mb-6">
-                  <button onClick={() => showToast("success", "Export Buku Kas", "Data kas sedang diunduh (Excel).")} className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-sm">
-                     <FileSpreadsheet size={16} /> Export Buku Kas (XLS)
+                  <button onClick={() => showToast("success", "Unduh Buku Kas", "Data kas sedang diunduh (Excel).")} className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-sm">
+                     <FileSpreadsheet size={16} /> Unduh Buku Kas (XLS)
                   </button>
                </div>
 
@@ -165,7 +163,7 @@ export default function FatPayrollDashboard() {
                            <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Total Pendapatan Kotor</p>
                         </div>
                         <h3 className="text-5xl font-black text-slate-900 tracking-tighter mb-8">
-                           Rp {revenue.toLocaleString('id-ID')}
+                           Rp{revenue.toLocaleString('id-ID')}
                         </h3>
                         <div className="flex gap-10 pt-6 border-t border-slate-100">
                            <div>
@@ -186,10 +184,10 @@ export default function FatPayrollDashboard() {
                            <div className="w-12 h-12 bg-rose-500/20 rounded-2xl flex items-center justify-center text-rose-400 border border-rose-500/30">
                               <XCircle size={24} />
                            </div>
-                           <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Potensi Kehilangan (Void)</p>
+                           <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Potensi Kehilangan (Batal)</p>
                         </div>
                         <h3 className="text-4xl font-black text-white tracking-tighter mb-4">
-                           Rp {potentialLoss.toLocaleString('id-ID')}
+                           Rp{potentialLoss.toLocaleString('id-ID')}
                         </h3>
                         <p className="text-slate-400 text-xs font-medium">Nilai uang dari {voidedOrders.length} transaksi yang dibatalkan oleh kasir hari ini.</p>
                      </div>
@@ -199,7 +197,7 @@ export default function FatPayrollDashboard() {
                   </div>
                </div>
 
-               {/* Transaksi Terbaru (Mini Laporan) */}
+               {/* Transaksi Terbaru */}
                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-8 border-b border-slate-100 bg-white">
                      <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-widest">Catatan Transaksi Masuk Terakhir</h3>
@@ -209,15 +207,27 @@ export default function FatPayrollDashboard() {
                         <p className="text-center text-sm font-semibold text-slate-400 py-6">Belum ada dana masuk.</p>
                      ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                           {completedOrders.slice(0, 6).map((o) => (
+                           {completedOrders.slice(0, 6).map((o) => {
+                             let timeStr = o.time;
+                             if(timeStr && (timeStr.includes("PM") || timeStr.includes("AM"))) {
+                               const [time, modifier] = timeStr.split(' ');
+                               let [hours, minutes] = time.split(':');
+                               if (hours === '12') hours = '00';
+                               if (modifier === 'PM') hours = String(parseInt(hours, 10) + 12);
+                               timeStr = `${hours}.${minutes}`;
+                             } else if (timeStr) {
+                               timeStr = timeStr.replace(':', '.');
+                             }
+
+                             return (
                              <div key={o.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                                <div>
                                   <p className="font-black text-slate-800 text-sm">{o.id}</p>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{o.time}</p>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{timeStr}</p>
                                </div>
-                               <p className="font-black text-[#FF0055] text-[15px]">Rp {o.grandTotal.toLocaleString()}</p>
+                               <p className="font-black text-[#FF0055] text-[15px]">Rp{o.grandTotal.toLocaleString('id-ID')}</p>
                              </div>
-                           ))}
+                           )})}
                         </div>
                      )}
                   </div>
@@ -251,15 +261,15 @@ export default function FatPayrollDashboard() {
                               <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{staff.attend}/26 Hari</span>
                            </div>
                            <div className="flex justify-between items-end pt-2 border-t border-slate-200/60">
-                              <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Take Home Pay</span>
-                              <span className="font-black text-xl text-slate-900">Rp {staff.salary.toLocaleString()}</span>
+                              <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Gaji Bersih</span>
+                              <span className="font-black text-xl text-slate-900">Rp{staff.salary.toLocaleString('id-ID')}</span>
                            </div>
                         </div>
                         
                         <div className="mt-auto">
                            {staff.status === "paid" ? (
                               <div className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 border border-emerald-100">
-                                 <CheckCircle2 size={16}/> Telah Dibayarkan
+                                 <CheckCircle2 size={16}/> Selesai Dibayarkan
                               </div>
                            ) : (
                               <button onClick={() => handlePayStaff(staff.id)} className="w-full py-4 bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
@@ -273,15 +283,15 @@ export default function FatPayrollDashboard() {
             </div>
           )}
 
-          {/* TAB 3: AUDIT PEMBATALAN (VOID LOGS) */}
+          {/* TAB 3: AUDIT PEMBATALAN */}
           {activeTab === "void" && (
             <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300 bg-[#F4F7FA]">
                <div className="flex justify-between items-center mb-8">
                   <div>
                      <h2 className="text-xl font-extrabold text-slate-800">Catatan Investigasi Pembatalan</h2>
-                     <p className="text-xs font-semibold text-slate-500 mt-1">Laporan transaksi gagal yang telah diotorisasi Manager.</p>
+                     <p className="text-xs font-semibold text-slate-500 mt-1">Laporan transaksi batal yang telah diotorisasi.</p>
                   </div>
-                  <button onClick={() => showToast("success", "Laporan PDF Siap", "Laporan audit sedang diunduh.")} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
+                  <button onClick={() => showToast("success", "Unduh PDF Siap", "Laporan audit sedang diunduh.")} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
                      <FileDown size={16} /> Unduh Bukti PDF
                   </button>
                </div>
@@ -304,28 +314,40 @@ export default function FatPayrollDashboard() {
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-slate-100">
-                              {voidedOrders.map((order, idx) => (
+                              {voidedOrders.map((order, idx) => {
+                                 let timeStr = order.time;
+                                 if(timeStr && (timeStr.includes("PM") || timeStr.includes("AM"))) {
+                                    const [time, modifier] = timeStr.split(' ');
+                                    let [hours, minutes] = time.split(':');
+                                    if (hours === '12') hours = '00';
+                                    if (modifier === 'PM') hours = String(parseInt(hours, 10) + 12);
+                                    timeStr = `${hours}.${minutes}`;
+                                 } else if (timeStr) {
+                                    timeStr = timeStr.replace(':', '.');
+                                 }
+
+                                 return (
                                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-8 py-6">
                                        <span className="font-black text-rose-500 bg-rose-50 px-2.5 py-1 rounded text-[12px]">{order.id}</span>
-                                       <p className="text-[10px] font-bold text-slate-400 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time}</p>
+                                       <p className="text-[10px] font-bold text-slate-400 mt-2 flex items-center gap-1.5"><Clock size={12}/> {timeStr}</p>
                                     </td>
                                     <td className="px-8 py-6">
                                        <div className="space-y-1">
                                           {order.items.map((it:any, i:number) => (
-                                             <p key={i} className="text-xs font-bold text-slate-600">{it.qty}x {it.name} <span className="font-medium text-slate-400">({it.variant || 'Normal'})</span></p>
+                                             <p key={i} className="text-xs font-bold text-slate-600">{it.qty} Produk / Pcs {it.name} <span className="font-medium text-slate-400">({it.variant || 'Normal'})</span></p>
                                           ))}
                                        </div>
                                     </td>
                                     <td className="px-8 py-6 text-right font-black text-slate-800 text-[15px]">
-                                       - Rp {order.grandTotal.toLocaleString()}
+                                       - Rp{order.grandTotal.toLocaleString('id-ID')}
                                     </td>
                                     <td className="px-8 py-6">
-                                       <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg inline-block mb-1">VOID / BATAL</span>
-                                       <p className="text-[10px] font-bold text-slate-400 italic mt-1">Alasan: "{order.voidReason || 'Ditolak Manager'}"</p>
+                                       <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg inline-block mb-1">BATAL</span>
+                                       <p className="text-[10px] font-bold text-slate-400 italic mt-1">Alasan: "{order.voidReason || 'Ditolak'}"</p>
                                     </td>
                                  </tr>
-                              ))}
+                              )})}
                            </tbody>
                         </table>
                      </div>
@@ -341,7 +363,7 @@ export default function FatPayrollDashboard() {
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-in fade-in">
              <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center border border-slate-100">
                 <div className="w-20 h-20 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><LogOut size={36}/></div>
-                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar Sistem?</h2>
+                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar?</h2>
                 <p className="text-[12px] font-bold text-slate-500 mb-10 leading-relaxed uppercase tracking-wider">Anda akan keluar dari Portal Keuangan.</p>
                 <div className="flex gap-4">
                   <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>

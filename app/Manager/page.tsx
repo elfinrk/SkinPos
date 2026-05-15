@@ -45,6 +45,9 @@ export default function ManagerDashboard() {
   const [toast, setToast] = useState<{type: 'success' | 'error' | 'info' | 'warning', title: string, subtitle: string} | null>(null);
 
   const [newMember, setNewMember] = useState({ name: "", phone: "", discount: 10 });
+  
+  const [voidPromptTarget, setVoidPromptTarget] = useState<string | null>(null);
+  const [voidReasonInput, setVoidReasonInput] = useState("Salah input kasir");
 
   const showToast = (type: 'success' | 'error' | 'info' | 'warning', title: string, subtitle: string) => {
     setToast({ type, title, subtitle });
@@ -100,26 +103,32 @@ export default function ManagerDashboard() {
   }, [isAuthorized]);
 
   const handleTolakPesanan = (orderId: string) => {
-    const reason = window.prompt(`Masukkan alasan pembatalan untuk pesanan ${orderId}:`, "Salah input kasir");
-    if (reason !== null) {
-      const orderToVoid = orders.find(o => o.id === orderId);
-      if(orderToVoid) {
-        const currentInvRaw = localStorage.getItem("skinpos_inventory");
-        if(currentInvRaw) {
-          let currentInv = JSON.parse(currentInvRaw);
-          const updatedInv = currentInv.map((item: any) => {
-            const totalQtyToReturn = orderToVoid.items.filter((c: any) => c.id === item.id).reduce((sum:number, current:any) => sum + current.qty, 0);
-            return totalQtyToReturn > 0 ? { ...item, stock: item.stock + totalQtyToReturn } : item;
-          });
-          localStorage.setItem("skinpos_inventory", JSON.stringify(updatedInv));
-        }
-        
-        const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: "voided", voidReason: reason } : o);
-        setOrders(updatedOrders);
-        localStorage.setItem("skinpos_orders", JSON.stringify(updatedOrders));
-        showToast("success", "Pesanan Ditolak", "Status diubah menjadi Void dan stok dikembalikan.");
+    setVoidPromptTarget(orderId);
+    setVoidReasonInput("Salah input kasir");
+  };
+
+  const submitTolakPesanan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!voidPromptTarget) return;
+
+    const orderToVoid = orders.find(o => o.id === voidPromptTarget);
+    if(orderToVoid) {
+      const currentInvRaw = localStorage.getItem("skinpos_inventory");
+      if(currentInvRaw) {
+        let currentInv = JSON.parse(currentInvRaw);
+        const updatedInv = currentInv.map((item: any) => {
+          const totalQtyToReturn = orderToVoid.items.filter((c: any) => c.id === item.id).reduce((sum:number, current:any) => sum + current.qty, 0);
+          return totalQtyToReturn > 0 ? { ...item, stock: item.stock + totalQtyToReturn } : item;
+        });
+        localStorage.setItem("skinpos_inventory", JSON.stringify(updatedInv));
       }
+      
+      const updatedOrders = orders.map(o => o.id === voidPromptTarget ? { ...o, status: "voided", voidReason: voidReasonInput } : o);
+      setOrders(updatedOrders);
+      localStorage.setItem("skinpos_orders", JSON.stringify(updatedOrders));
+      showToast("success", "Pesanan Ditolak", "Status diubah menjadi Batal dan stok dikembalikan.");
     }
+    setVoidPromptTarget(null);
   };
 
   const handleAddMember = (e: React.FormEvent) => {
@@ -129,7 +138,7 @@ export default function ManagerDashboard() {
     setMembers(updatedMembers);
     localStorage.setItem("skinpos_members", JSON.stringify(updatedMembers));
     setNewMember({ name: "", phone: "", discount: 10 });
-    showToast("success", "Berhasil", "Member pelanggan berhasil ditambahkan.");
+    showToast("success", "Berhasil", "Data Anggota berhasil ditambahkan.");
   }
 
   const completedOrders = orders.filter(o => o.status === "completed");
@@ -152,11 +161,11 @@ export default function ManagerDashboard() {
         <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto scrollbar-hide">
           <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Akses Supervisi</p>
           {[
-            { id: "dashboard", icon: LayoutDashboard, label: "Insight Bisnis" },
+            { id: "dashboard", icon: LayoutDashboard, label: "Analisis Bisnis" },
             { id: "voids", icon: ShieldAlert, label: "Live Antrean", count: pendingOrders.length },
             { id: "history", icon: History, label: "Riwayat & Laporan" },
             { id: "audit", icon: ClipboardList, label: "Audit Stok" },
-            { id: "members", icon: UsersRound, label: "Database Member" }
+            { id: "members", icon: UsersRound, label: "Data Anggota" }
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-bold text-sm ${activeTab === tab.id ? "bg-[#FF0055] text-white shadow-lg shadow-rose-500/25" : "bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"}`}>
               <tab.icon size={18} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? "text-white" : "text-slate-400"} />
@@ -190,7 +199,7 @@ export default function ManagerDashboard() {
         <div className="p-6 border-t border-slate-100 shrink-0">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
             <LogOut size={18} />
-            <span>Keluar Sistem</span>
+            <span>Keluar</span>
           </button>
         </div>
       </aside>
@@ -199,7 +208,7 @@ export default function ManagerDashboard() {
       <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA]">
         <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
           <div>
-            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight capitalize">{activeTab === "dashboard" ? "Business Insight" : activeTab === "voids" ? "Live Antrean Kasir" : activeTab === "audit" ? "Audit Inventaris" : activeTab === "members" ? "Manajemen Pelanggan" : "Riwayat & Laporan"}</h1>
+            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight capitalize">{activeTab === "dashboard" ? "Analisis Bisnis" : activeTab === "voids" ? "Live Antrean Kasir" : activeTab === "audit" ? "Audit Inventaris" : activeTab === "members" ? "Data Anggota" : "Riwayat & Laporan"}</h1>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Pantauan Operasional Terpadu</p>
           </div>
           <div className="flex items-center gap-4">
@@ -226,10 +235,10 @@ export default function ManagerDashboard() {
                            <div className="p-3 bg-emerald-50 text-emerald-500 rounded-[1rem]"><TrendingUp size={24}/></div>
                            <div><h3 className="font-bold text-slate-800">Performa Keuangan</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Penjualan Bersih</p></div>
                         </div>
-                        <h2 className="text-5xl font-black text-slate-900 mb-8 tracking-tighter">Rp {totalRevenue.toLocaleString('id-ID')}</h2>
+                        <h2 className="text-5xl font-black text-slate-900 mb-8 tracking-tighter">Rp{totalRevenue.toLocaleString('id-ID')}</h2>
                         <div className="pt-6 border-t border-slate-100 flex gap-10">
                            <div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Sukses</p><p className="text-xl font-black text-slate-700 flex items-center gap-2"><Receipt size={16} className="text-emerald-500"/> {completedOrders.length} Struk</p></div>
-                           <div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Void</p><p className="text-xl font-black text-slate-700 flex items-center gap-2"><XCircle size={16} className="text-rose-500"/> {voidedOrders.length} Kasus</p></div>
+                           <div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Batal</p><p className="text-xl font-black text-slate-700 flex items-center gap-2"><XCircle size={16} className="text-rose-500"/> {voidedOrders.length} Kasus</p></div>
                         </div>
                      </div>
                      <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
@@ -264,7 +273,7 @@ export default function ManagerDashboard() {
                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
                   <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                      <h3 className="font-extrabold text-slate-800 text-lg">Pesanan Menggantung</h3>
-                     <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full uppercase tracking-widest border border-amber-100">Live Update</span>
+                     <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full uppercase tracking-widest border border-amber-100">Terkini</span>
                   </div>
                   <div className="flex-1 overflow-y-auto">
                     {pendingOrders.length === 0 ? (
@@ -275,10 +284,10 @@ export default function ManagerDashboard() {
                         <tbody className="divide-y divide-slate-100">
                           {pendingOrders.map(order => (
                             <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-8 py-6"><span className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-rose-50 text-[#FF0055] border border-rose-100">{order.id}</span><p className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time}</p></td>
+                              <td className="px-8 py-6"><span className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-rose-50 text-[#FF0055] border border-rose-100">{order.id}</span><p className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time ? order.time.replace(':', '.') : ''}</p></td>
                               <td className="px-8 py-6"><div className="space-y-1.5">{order.items.map((it: any, i: number) => (<p key={i} className="text-xs font-bold text-slate-700">{it.qty}x {it.name} <span className="text-slate-400 font-medium">({it.variant || 'Normal'})</span></p>))}</div></td>
-                              <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">Rp {order.grandTotal.toLocaleString()}</td>
-                              <td className="px-8 py-6 text-center"><button onClick={() => handleTolakPesanan(order.id)} className="px-4 py-2.5 bg-rose-50 text-[#FF0055] text-[11px] font-bold tracking-wider uppercase rounded-xl hover:bg-[#FF0055] hover:text-white transition-all shadow-sm border border-rose-100 hover:border-transparent flex items-center justify-center gap-2 mx-auto"><Trash2 size={14}/> Tolak / Void</button></td>
+                              <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">Rp{order.grandTotal.toLocaleString('id-ID')}</td>
+                              <td className="px-8 py-6 text-center"><button onClick={() => handleTolakPesanan(order.id)} className="px-4 py-2.5 bg-rose-50 text-[#FF0055] text-[11px] font-bold tracking-wider uppercase rounded-xl hover:bg-[#FF0055] hover:text-white transition-all shadow-sm border border-rose-100 hover:border-transparent flex items-center justify-center gap-2 mx-auto"><Trash2 size={14}/> Tolak / Batalkan</button></td>
                             </tr>
                           ))}
                         </tbody>
@@ -295,8 +304,8 @@ export default function ManagerDashboard() {
               <div className="flex items-center justify-between mb-8">
                  <h2 className="text-xl font-extrabold text-slate-800">Database Transaksi</h2>
                  <div className="flex gap-3">
-                    <button onClick={() => showToast("success", "Export Laporan PDF", "Laporan siap dicetak.")} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md hover:-translate-y-0.5"><FileDown size={16} /> Laporan PDF</button>
-                    <button onClick={() => showToast("success", "Export Excel", "Rekapitulasi Excel berhasil diunduh.")} className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md hover:-translate-y-0.5"><FileSpreadsheet size={16} /> Data Excel</button>
+                    <button onClick={() => showToast("success", "Unduh Laporan PDF", "Laporan siap dicetak.")} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md hover:-translate-y-0.5"><FileDown size={16} /> Unduh PDF</button>
+                    <button onClick={() => showToast("success", "Unduh Excel", "Rekapitulasi Excel berhasil diunduh.")} className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md hover:-translate-y-0.5"><FileSpreadsheet size={16} /> Unduh Excel</button>
                  </div>
               </div>
 
@@ -310,12 +319,12 @@ export default function ManagerDashboard() {
                        <tbody className="divide-y divide-slate-100">
                          {[...completedOrders, ...voidedOrders].map((order, idx) => (
                            <tr key={`${order.id}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
-                             <td className="px-8 py-6"><span className="font-bold text-slate-800 text-[13px]">{order.id}</span><p className="text-[10px] font-semibold text-slate-400 mt-1">{order.time}</p></td>
+                             <td className="px-8 py-6"><span className="font-bold text-slate-800 text-[13px]">{order.id}</span><p className="text-[10px] font-semibold text-slate-400 mt-1">{order.time ? order.time.replace(':', '.') : ''}</p></td>
                              <td className="px-8 py-6"><span className="text-[13px] font-bold text-slate-700">{order.member ? order.member.name : "Umum"}</span></td>
-                             <td className="px-8 py-6 text-right font-black text-slate-800 text-[15px]">Rp {order.grandTotal.toLocaleString()}</td>
+                             <td className="px-8 py-6 text-right font-black text-slate-800 text-[15px]">Rp{order.grandTotal.toLocaleString('id-ID')}</td>
                              <td className="px-8 py-6">
                                 <div className="flex flex-col items-start gap-1.5">
-                                  {order.status === "completed" ? <span className="bg-emerald-50 text-emerald-600 px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-emerald-100 inline-block">Sukses</span> : <span className="bg-rose-50 text-[#FF0055] px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-rose-100 inline-block">Void</span>}
+                                  {order.status === "completed" ? <span className="bg-emerald-50 text-emerald-600 px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-emerald-100 inline-block">Selesai</span> : <span className="bg-rose-50 text-[#FF0055] px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-rose-100 inline-block">Batal</span>}
                                   {order.status === "voided" && order.voidReason && (<span className="text-[10px] font-bold text-rose-400">"{order.voidReason}"</span>)}
                                 </div>
                              </td>
@@ -358,20 +367,20 @@ export default function ManagerDashboard() {
             <div className="h-full p-10 overflow-y-auto animate-in fade-in bg-[#F4F7FA] flex gap-8">
                <div className="w-[360px] shrink-0">
                   <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-                     <h3 className="font-extrabold text-slate-800 mb-6 flex items-center gap-2"><UserPlus size={20} className="text-[#FF0055]"/> Tambah Member VIP</h3>
+                     <h3 className="font-extrabold text-slate-800 mb-6 flex items-center gap-2"><UserPlus size={20} className="text-[#FF0055]"/> Tambah Anggota VIP</h3>
                      <form onSubmit={handleAddMember} className="space-y-5">
-                        <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nama Pelanggan</label><input type="text" value={newMember.name} onChange={(e)=>setNewMember({...newMember, name: e.target.value})} placeholder="Masukkan nama" className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" /></div>
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nama Anggota</label><input type="text" value={newMember.name} onChange={(e)=>setNewMember({...newMember, name: e.target.value})} placeholder="Masukkan nama" className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" /></div>
                         <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nomor HP</label><input type="text" value={newMember.phone} onChange={(e)=>setNewMember({...newMember, phone: e.target.value})} placeholder="08..." className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" /></div>
-                        <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Diskon Default (%)</label><input type="number" min="0" max="100" value={newMember.discount} onChange={(e)=>setNewMember({...newMember, discount: Number(e.target.value)})} className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" /></div>
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Diskon Standar (%)</label><input type="number" min="0" max="100" value={newMember.discount} onChange={(e)=>setNewMember({...newMember, discount: Number(e.target.value)})} className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" /></div>
                         <button type="submit" className="w-full py-4 bg-slate-800 text-white rounded-xl font-bold text-[11px] tracking-[0.2em] uppercase hover:bg-[#FF0055] shadow-md transition-all mt-2">Simpan Data</button>
                      </form>
                   </div>
                </div>
                <div className="flex-1 bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white"><h3 className="font-extrabold text-slate-800">Database Pelanggan</h3><span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full uppercase tracking-widest border border-slate-200">Total: {members.length}</span></div>
+                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white"><h3 className="font-extrabold text-slate-800">Data Anggota</h3><span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full uppercase tracking-widest border border-slate-200">Total: {members.length}</span></div>
                   <div className="flex-1 overflow-y-auto">
                      <table className="w-full text-left">
-                       <thead className="sticky top-0 bg-slate-50 border-b border-slate-100 z-10"><tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]"><th className="px-8 py-5">Nama Pelanggan</th><th className="px-8 py-5">Nomor HP</th><th className="px-8 py-5 text-center">Hak Diskon</th></tr></thead>
+                       <thead className="sticky top-0 bg-slate-50 border-b border-slate-100 z-10"><tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]"><th className="px-8 py-5">Nama Anggota</th><th className="px-8 py-5">Nomor HP</th><th className="px-8 py-5 text-center">Hak Diskon</th></tr></thead>
                        <tbody className="divide-y divide-slate-100">
                          {members.map((m, idx) => (
                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -388,14 +397,34 @@ export default function ManagerDashboard() {
           )}
         </div>
 
+        {/* MODAL ALASAN TOLAK PESANAN */}
+        {voidPromptTarget && (
+           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[900] flex items-center justify-center p-4 animate-in fade-in">
+              <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
+                 <div className="w-16 h-16 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><ShieldAlert size={32}/></div>
+                 <h3 className="text-center font-black text-slate-800 text-xl mb-2">Alasan Pembatalan</h3>
+                 <p className="text-center text-[12px] font-bold text-slate-400 mb-6 uppercase tracking-widest">Pesanan {voidPromptTarget}</p>
+                 <form onSubmit={submitTolakPesanan} className="space-y-6">
+                    <div>
+                       <input type="text" value={voidReasonInput} onChange={(e)=>setVoidReasonInput(e.target.value)} placeholder="Masukkan alasan..." className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]" required autoFocus />
+                    </div>
+                    <div className="flex gap-4">
+                       <button type="button" onClick={() => setVoidPromptTarget(null)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
+                       <button type="submit" className="flex-1 py-4 rounded-2xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-widest shadow-md">Tolak Pesanan</button>
+                    </div>
+                 </form>
+              </div>
+           </div>
+        )}
+
         {/* MODAL PUSAT BANTUAN */}
         {showHelpCenter && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[800] flex items-center justify-center p-4 animate-in fade-in">
               <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><HelpCircle size={32}/></div>
-                 <h3 className="text-center font-black text-slate-800 text-xl mb-6">Pusat Bantuan Manager</h3>
+                 <h3 className="text-center font-black text-slate-800 text-xl mb-6">Pusat Bantuan</h3>
                  <div className="space-y-3 mb-8">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100"><p className="font-bold text-sm text-slate-800 mb-1">Otorisasi Void Gagal?</p><p className="text-xs text-slate-500 leading-relaxed">Pastikan kasir memasukkan "Live Void PIN" yang tertera di sidebar kiri Anda. PIN akan berganti setiap 60 detik.</p></div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100"><p className="font-bold text-sm text-slate-800 mb-1">Cara membatalkan transaksi?</p><p className="text-xs text-slate-500 leading-relaxed">Buka tab "Riwayat & Laporan", pilih transaksi "Ajukan Pembatalan", lalu minta Kata Sandi Otorisasi Manager.</p></div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100"><p className="font-bold text-sm text-slate-800 mb-1">Laporan Excel Error?</p><p className="text-xs text-slate-500 leading-relaxed">Pastikan perangkat Anda terkoneksi internet. Jika masih terkendala, hubungi IT Support.</p></div>
                  </div>
                  <button onClick={() => setShowHelpCenter(false)} className="w-full py-4 rounded-2xl font-bold bg-slate-800 text-white hover:bg-[#FF0055] transition-all text-[11px] uppercase tracking-widest shadow-md">Tutup</button>
@@ -408,7 +437,7 @@ export default function ManagerDashboard() {
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-in fade-in">
              <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center border border-slate-100">
                 <div className="w-20 h-20 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><LogOut size={36}/></div>
-                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar Sistem?</h2>
+                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar?</h2>
                 <p className="text-[12px] font-bold text-slate-500 mb-10 leading-relaxed uppercase tracking-wider">Sesi supervisi manager akan diakhiri.</p>
                 <div className="flex gap-4">
                   <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>

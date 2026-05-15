@@ -17,17 +17,30 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const INITIAL_INVENTORY = [
-  { id: "P01", name: "Serum Vitamin C", price: 120000, stock: 10, type: "product", exp : "12/2026" },
-  { id: "P02", name: "Sunscreen SPF 50", price: 85000, stock: 15, type: "product", exp: "05/2026" },
-  { id: "P03", name: "Facial Wash Acne", price: 65000, stock: 5, type: "product", exp: "10/2026" },
-  { id: "T01", name: "Treatment Glowing", price: 250000, stock: 999, type: "treatment", exp: "-" },
-  { id: "T02", name: "Acne Peeling", price: 350000, stock: 999, type: "treatment", exp: "-" },
+  { id: "P01", name: "Serum Vitamin C", price: 120000, stock: 10, type: "Produk", exp : "12/2026" },
+  { id: "P02", name: "Sunscreen SPF 50", price: 85000, stock: 15, type: "Produk", exp: "05/2026" },
+  { id: "P03", name: "Facial Wash Acne", price: 65000, stock: 5, type: "Produk", exp: "10/2026" },
+  { id: "T01", name: "Treatment Glowing", price: 250000, stock: 999, type: "Layanan", exp: "-" },
+  { id: "T02", name: "Acne Peeling", price: 350000, stock: 999, type: "Layanan", exp: "-" },
 ];
 
 const MEMBER_DB = [
   { phone: "08123456789", name: "Nanda", discount: 0.10 },
   { phone: "08987654321", name: "Sarah", discount: 0.15 },
 ];
+
+// Helper untuk format rupiah (Rp120.000)
+const formatRupiah = (number: number) => {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+};
+
+// Helper format 24 jam (misal 17.23)
+const formatWaktu = () => {
+  const date = new Date();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}.${minutes}`;
+};
 
 export default function CashierDashboard() {
   const router = useRouter();
@@ -103,7 +116,7 @@ export default function CashierDashboard() {
       showToast("error", "Stok Habis!", `${item.name} tidak tersedia.`);
       return;
     }
-    if (item.type === "product") {
+    if (item.type === "Produk" || item.type === "Produk") {
       setSelectedProduct(item);
       setSelectedVariant("Normal");
     } else {
@@ -138,7 +151,7 @@ export default function CashierDashboard() {
   const handleRemoveFromCart = (cartId: string) => {
     const item = cart.find(i => i.cartId === cartId);
     if (item && (item.price * item.qty) >= 300000) {
-      if (!window.confirm(`Item bernilai tinggi (Rp ${(item.price * item.qty).toLocaleString()}). Hapus dari keranjang?`)) return;
+      if (!window.confirm(`Produk bernilai tinggi (${formatRupiah(item.price * item.qty)}). Hapus dari keranjang?`)) return;
     }
     setCart(prev => prev.filter(c => c.cartId !== cartId));
   };
@@ -157,7 +170,7 @@ export default function CashierDashboard() {
       const member = MEMBER_DB.find(m => m.phone === memberPhone);
       if(member) {
         setActiveMember(member);
-        showToast("success", "Member Ditemukan", member.name);
+        showToast("success", "Anggota Ditemukan", member.name);
       } else {
         setActiveMember(null);
         showToast("info", "Pelanggan Umum", "Tidak ada diskon.");
@@ -177,7 +190,7 @@ export default function CashierDashboard() {
       const newOrder = { 
         id: orderId, items: [...cart], member: activeMember, subtotal, 
         discountAmount: discount, grandTotal: subtotal - discount, 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
+        time: formatWaktu(), // Menggunakan format 24 jam dengan titik
         status: "pending" 
       };
       
@@ -202,6 +215,8 @@ export default function CashierDashboard() {
     const targetItem = inventory.find(i => i.id === stockInput.id);
     if (stockType === "keluar" && targetItem.stock < stockInput.qty) return showToast("error", "Stok Kurang", "Melebihi fisik.");
     
+    // Perbaikan: Mengubah format tanggal (YYYY-MM-DD) dari date picker ke format sederhana jika diperlukan, 
+    // namun kita biarkan saja sesuai output date picker agar konsisten jika ingin diedit lagi.
     const updatedInv = inventory.map(item => item.id === stockInput.id ? { ...item, stock: stockType === "masuk" ? item.stock + Number(stockInput.qty) : item.stock - Number(stockInput.qty), exp: stockType === "masuk" && stockInput.expDate ? stockInput.expDate : item.exp } : item);
     updateSharedInventory(updatedInv);
     setStockInput({ id: "", qty: 0, reason: "rusak", expDate: "" });
@@ -215,7 +230,7 @@ export default function CashierDashboard() {
 
   const handleSelesaikanTransaksi = (order: any) => {
     setShowReceipt(order);
-    const updated = orders.map(o => o.id === order.id ? { ...o, status: "completed" } : o);
+    const updated = orders.map(o => o.id === order.id ? { ...o, status: "Selesai" } : o);
     updateSharedOrders(updated);
   };
 
@@ -230,9 +245,9 @@ export default function CashierDashboard() {
       const updatedOrders = orders.map(o => o.id === voidTarget.id ? { ...o, status: "voided" } : o);
       updateSharedOrders(updatedOrders);
       
-      showToast("success", "Dibatalkan", "Transaksi void, stok kembali.");
+      showToast("success", "Dibatalkan", "Transaksi batal, stok kembali.");
       setVoidTarget(null);
-    } else showToast("error", "Akses Ditolak", "PIN Manager salah.");
+    } else showToast("error", "Akses Ditolak", "Kata Sandi Manager salah.");
   };
 
   if (!isAuthorized) return null;
@@ -251,7 +266,7 @@ export default function CashierDashboard() {
             className="w-10 h-10 mr-3 object-contain drop-shadow-sm" 
           />
           <span className="font-extrabold text-slate-800 text-xl tracking-tight">
-            Cashier<span className="text-[#FF0055]">.</span>
+            Kasir<span className="text-[#FF0055]">.</span>
           </span>
         </div>
 
@@ -292,7 +307,7 @@ export default function CashierDashboard() {
         <div className="p-6 border-t border-slate-100">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
             <LogOut size={20} />
-            <span>Keluar Sistem</span>
+            <span>Keluar</span>
           </button>
         </div>
       </aside>
@@ -338,9 +353,11 @@ export default function CashierDashboard() {
                              </div>
                              {item.stock <= 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">Habis</span>}
                           </div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{item.type}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                            {item.type === "Produk" ? "Produk" : item.type === "Treatment" ? "Layanan" : item.type}
+                          </p>
                           <h3 className="text-[14px] font-bold text-slate-800 leading-snug flex-1">{item.name}</h3>
-                          <p className="text-[18px] font-black text-slate-900 mt-2">Rp {item.price.toLocaleString()}</p>
+                          <p className="text-[18px] font-black text-slate-900 mt-2">{formatRupiah(item.price)}</p>
                         </button>
                       </div>
                     ))}
@@ -354,7 +371,7 @@ export default function CashierDashboard() {
                 <div className="p-8 border-b border-slate-100">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="font-extrabold text-slate-800 flex items-center gap-3 text-sm tracking-widest uppercase"><ShoppingCart size={18} className="text-[#FF0055]" /> KERANJANG</h2>
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">{cart.length} Item</span>
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">{cart.length} Produk</span>
                   </div>
                   
                   <div className="relative">
@@ -395,7 +412,7 @@ export default function CashierDashboard() {
                         <button onClick={() => handleRemoveFromCart(item.cartId)} className="text-slate-300 hover:text-rose-500 transition-colors bg-slate-50 p-1.5 rounded-full"><XCircle size={16}/></button>
                       </div>
                       <div className="flex justify-between items-center mt-1">
-                        <span className="text-[15px] font-black text-[#FF0055]">Rp {(item.price * item.qty).toLocaleString()}</span>
+                        <span className="text-[15px] font-black text-[#FF0055]">{formatRupiah(item.price * item.qty)}</span>
                         <div className="flex items-center gap-3 border border-slate-100 rounded-xl p-1 bg-slate-50">
                            <button onClick={() => updateCartItemQty(item.cartId, item.qty - 1, item.id)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-rose-600 shadow-sm transition-colors"><Minus size={14}/></button>
                            <span className="text-[13px] font-bold w-5 text-center text-slate-800">{item.qty}</span>
@@ -408,11 +425,11 @@ export default function CashierDashboard() {
 
                 {/* Summary & Checkout */}
                 <div className="p-8 bg-white border-t border-slate-200">
-                  <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3"><span>Subtotal</span><span className="text-slate-700">Rp {cart.reduce((s,i)=>s+(i.price*i.qty),0).toLocaleString()}</span></div>
-                  {activeMember && <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-3"><span>Diskon</span><span>-Rp {(cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount).toLocaleString()}</span></div>}
+                  <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3"><span>Subtotal</span><span className="text-slate-700">{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0))}</span></div>
+                  {activeMember && <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-3"><span>Diskon</span><span>-{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount)}</span></div>}
                   <div className="pt-5 border-t border-slate-100 flex justify-between items-end mb-8">
                       <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Tagihan</span>
-                      <span className="text-3xl font-[900] text-slate-900 tracking-tighter">Rp {(cart.reduce((s,i)=>s+(i.price*i.qty),0) - (activeMember ? cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount : 0)).toLocaleString()}</span>
+                      <span className="text-3xl font-[900] text-slate-900 tracking-tighter">{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0) - (activeMember ? cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount : 0))}</span>
                   </div>
                   <button onClick={handleCheckout} disabled={cart.length === 0 || isProcessingOrder} className={`w-full py-5 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase flex justify-center items-center gap-2 transition-all ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#FF0055] text-white hover:bg-[#D40048] shadow-lg shadow-rose-500/25'}`}>
                     {isProcessingOrder ? <Loader2 size={18} className="animate-spin" /> : "PROSES PEMBAYARAN"}
@@ -433,18 +450,19 @@ export default function CashierDashboard() {
                     <button onClick={() => setStockType("keluar")} className={`flex-1 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${stockType === "keluar" ? "bg-white text-slate-800 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}>Keluar</button>
                   </div>
                   <div className="space-y-6">
-                    <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Item Produk</label>
+                    <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Produk</label>
                       <select value={stockInput.id} onChange={(e) => setStockInput({...stockInput, id: e.target.value})} className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]">
                         <option value="">-- Pilih SKU --</option>
                         {inventory.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                       </select>
                     </div>
-                    <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Jumlah Unit</label>
+                    <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Jumlah Produk / Pcs</label>
                       <input type="number" value={stockInput.qty || ""} onChange={(e) => setStockInput({...stockInput, qty: Number(e.target.value)})} className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]" placeholder="0" />
                     </div>
                     {stockType === "masuk" && (
                       <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Tanggal Kedaluwarsa</label>
-                        <input type="text" placeholder="Misal: 10/2026" value={stockInput.expDate} onChange={(e) => setStockInput({...stockInput, expDate: e.target.value})} className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]" />
+                        {/* INI BAGIAN YANG DIUBAH MENJADI TYPE="DATE" */}
+                        <input type="date" value={stockInput.expDate} onChange={(e) => setStockInput({...stockInput, expDate: e.target.value})} className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]" />
                       </div>
                     )}
                     {stockType === "keluar" && (
@@ -459,7 +477,7 @@ export default function CashierDashboard() {
                 </div>
               </div>
               <div className="flex-1 bg-white rounded-[2rem] border border-slate-200 overflow-hidden flex flex-col shadow-sm">
-                <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white"><h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-widest">Status Inventaris</h3><span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full uppercase tracking-widest border border-emerald-100">Live Update</span></div>
+                <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white"><h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-widest">Status Inventaris</h3><span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full uppercase tracking-widest border border-emerald-100">Aktif / Terkini</span></div>
                 <div className="flex-1 overflow-y-auto">
                   <table className="w-full text-left">
                     <thead><tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-50 border-b border-slate-100"><th className="px-8 py-5">Detail Item</th><th className="px-8 py-5 text-center">Status / Expired</th><th className="px-8 py-5 text-right">Stok Fisik</th></tr></thead>
@@ -470,7 +488,8 @@ export default function CashierDashboard() {
                           <td className="px-8 py-6 text-center">
                              <div className="flex flex-col items-center gap-1.5">
                                {i.stock < 10 ? <span className="text-[9px] font-bold bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg border border-rose-100 uppercase inline-block">Menipis</span> : <span className="text-[9px] font-bold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-100 uppercase inline-block">Aman</span>}
-                               {i.type === "product" && <span className="text-[9px] font-bold text-slate-400">Exp: {i.exp}</span>}
+                               {/* DIPERBAIKI JUGA DI SINI */}
+                               {(i.type === "Produk" || i.type === "Produk") && <span className="text-[9px] font-bold text-slate-400">Exp: {i.exp}</span>}
                              </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">{i.stock > 900 ? '∞' : i.stock}</td>
@@ -489,11 +508,11 @@ export default function CashierDashboard() {
               <div className="flex items-center justify-between mb-8">
                  <h2 className="text-xl font-bold text-slate-800">Riwayat Penjualan</h2>
                  <div className="flex gap-3">
-                    <button onClick={() => showToast("success", "Export Laporan", "Laporan PDF sedang diunduh.")} className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
-                       <FileDown size={14} /> Export PDF
+                    <button onClick={() => showToast("success", "Unduh PDF", "Laporan PDF sedang diunduh.")} className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
+                       <FileDown size={14} /> Unduh PDF
                     </button>
-                    <button onClick={() => showToast("success", "Export Excel", "Rekapitulasi Excel berhasil dibuat.")} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md">
-                       <FileSpreadsheet size={14} /> Export Excel
+                    <button onClick={() => showToast("success", "Unduh Excel", "Rekapitulasi Excel berhasil dibuat.")} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md">
+                       <FileSpreadsheet size={14} /> Unduh Excel
                     </button>
                  </div>
               </div>
@@ -511,7 +530,7 @@ export default function CashierDashboard() {
                         <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">{order.id}</span>
                         <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time}</p>
                       </div>
-                      <p className="text-xl font-black text-slate-800">Rp {order.grandTotal.toLocaleString()}</p>
+                      <p className="text-xl font-black text-slate-800">{formatRupiah(order.grandTotal)}</p>
                     </div>
                     <div className="space-y-3 mb-6 h-24 overflow-y-auto scrollbar-hide">
                       {order.items.map((it:any, idx:number) => <p key={idx} className="text-[12px] font-bold text-slate-500 flex justify-between"><span>{it.qty}x {it.name} <span className="text-[9px] opacity-70 font-semibold ml-1">({it.variant})</span></span></p>)}
@@ -519,10 +538,10 @@ export default function CashierDashboard() {
                     <div className="pt-4 border-t border-slate-100">
                       {order.status === 'pending' ? (
                         <div className="grid grid-cols-2 gap-3">
-                           <button onClick={() => handleVoidRequest(order)} className="text-[11px] font-bold py-3 rounded-xl border border-slate-200 text-[#FF0055] hover:bg-rose-50 hover:border-rose-200 transition-all bg-white shadow-sm">Request Void</button>
+                           <button onClick={() => handleVoidRequest(order)} className="text-[11px] font-bold py-3 rounded-xl border border-slate-200 text-[#FF0055] hover:bg-rose-50 hover:border-rose-200 transition-all bg-white shadow-sm">Ajukan Pembatalan</button>
                            <button onClick={() => handleSelesaikanTransaksi(order)} className="text-[11px] font-bold py-3 rounded-xl bg-slate-800 text-white hover:bg-[#FF0055] transition-all shadow-md">Selesai</button>
                         </div>
-                      ) : <div className={`text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${order.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{order.status}</div>}
+                      ) : <div className={`text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${order.status === 'Selesai' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{order.status === 'Selesai' ? 'Selesai' : 'Batal'}</div>}
                     </div>
                   </div>
                 ))}
@@ -564,8 +583,8 @@ export default function CashierDashboard() {
               <h3 className="text-center font-black text-slate-800 text-xl mb-8 tracking-tight">TRANSAKSI SUKSES</h3>
               <div className="bg-[#F8FAFC] p-6 rounded-2xl font-mono text-[11px] border border-slate-200 space-y-4 mb-8 text-slate-600">
                 <p className="text-center font-bold border-b border-dashed border-slate-300 pb-4 mb-4 uppercase tracking-[0.2em] text-slate-400">ROSEREVE CLINIC</p>
-                {showReceipt.items.map((c: any) => <div key={c.cartId} className="flex justify-between font-bold"><span>{c.qty}x {c.name.slice(0,15)} <span className="opacity-70">({c.variant.slice(0,3)})</span></span><span>Rp {(c.price * c.qty).toLocaleString()}</span></div>)}
-                <div className="border-t border-dashed border-slate-300 pt-5 mt-5 flex justify-between font-black text-slate-800 text-sm"><span>TOTAL</span><span>Rp {showReceipt.grandTotal.toLocaleString()}</span></div>
+                {showReceipt.items.map((c: any) => <div key={c.cartId} className="flex justify-between font-bold"><span>{c.qty}x {c.name.slice(0,15)} <span className="opacity-70">({c.variant.slice(0,3)})</span></span><span>{formatRupiah(c.price * c.qty)}</span></div>)}
+                <div className="border-t border-dashed border-slate-300 pt-5 mt-5 flex justify-between font-black text-slate-800 text-sm"><span>TOTAL</span><span>{formatRupiah(showReceipt.grandTotal)}</span></div>
               </div>
               <button onClick={() => setShowReceipt(null)} className="w-full bg-[#FF0055] text-white py-5 rounded-2xl font-black text-[11px] tracking-[0.3em] uppercase hover:bg-[#D40048] transition-all shadow-xl shadow-rose-500/20">TUTUP STRUK</button>
             </div>
@@ -578,7 +597,7 @@ export default function CashierDashboard() {
             <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
               <div className="w-20 h-20 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><KeyRound size={36}/></div>
               <h3 className="text-center font-black text-slate-800 text-lg mb-3 uppercase tracking-widest">Akses Manager</h3>
-              <p className="text-center text-[11px] font-bold text-slate-400 mb-8 uppercase tracking-wider">Masukkan PIN otorisasi pesanan <br/><span className="text-[#FF0055]">{voidTarget.id}</span></p>
+              <p className="text-center text-[11px] font-bold text-slate-400 mb-8 uppercase tracking-wider">Masukkan Kata Sandi otorisasi pesanan <br/><span className="text-[#FF0055]">{voidTarget.id}</span></p>
               <input type="password" maxLength={6} value={voidPinInput} onChange={(e) => setVoidPinInput(e.target.value)} autoFocus placeholder="••••••" className="w-full text-center text-4xl tracking-[0.5em] font-black py-5 bg-[#F8FAFC] rounded-2xl border-2 border-slate-200 outline-none focus:border-[#FF0055] focus:bg-white focus:ring-4 focus:ring-rose-50 text-[#FF0055] mb-8 transition-colors" />
               <div className="flex gap-4">
                 <button onClick={() => setVoidTarget(null)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
@@ -597,7 +616,7 @@ export default function CashierDashboard() {
                  <div className="space-y-3 mb-8">
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                        <p className="font-bold text-sm text-slate-800 mb-1">Cara membatalkan transaksi?</p>
-                       <p className="text-xs text-slate-500 leading-relaxed">Buka tab "Riwayat & Laporan", pilih transaksi "Request Void", lalu minta PIN Otorisasi Manager.</p>
+                       <p className="text-xs text-slate-500 leading-relaxed">Buka tab "Riwayat & Laporan", pilih transaksi "Ajukan Pembatalan", lalu minta Kata Sandi Otorisasi Manager.</p>
                     </div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                        <p className="font-bold text-sm text-slate-800 mb-1">Peralatan kasir macet?</p>
@@ -614,7 +633,7 @@ export default function CashierDashboard() {
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-in fade-in">
              <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center border border-slate-100">
                 <div className="w-20 h-20 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><LogOut size={36}/></div>
-                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar Sistem?</h2>
+                <h2 className="text-2xl font-black text-slate-800 mb-4">Keluar?</h2>
                 <p className="text-[12px] font-bold text-slate-500 mb-10 leading-relaxed uppercase tracking-wider">Anda akan mengakhiri sesi kasir.</p>
                 <div className="flex gap-4">
                   <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>

@@ -113,7 +113,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-5">
               
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Username Akses</label>
+                <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Nama Pengguna</label>
                 <div className="relative group">
                   <User size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-[#FF0055] transition-colors" />
                   <input 
@@ -128,7 +128,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Kunci Password</label>
+                <label className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest ml-1">Kata Sandi</label>
                 <div className="relative group">
                   <Lock size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-[#FF0055] transition-colors" />
                   <input 
@@ -155,7 +155,7 @@ export default function LoginPage() {
                   onClick={() => setView("forgot")}
                   className="text-[11px] font-bold text-[#FF0055] hover:text-[#D40048] hover:underline transition-all"
                 >
-                  Lupa Password?
+                  Lupa Kata Sandi?
                 </button>
               </div>
 
