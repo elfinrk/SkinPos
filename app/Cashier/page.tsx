@@ -7,7 +7,7 @@ import {
   PackagePlus, ShieldAlert, Clock, XCircle, History, 
   LogOut, Boxes, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, 
   Info, KeyRound, Loader2, Plus, Minus, ReceiptText, Sparkles,
-  HelpCircle, FileDown, FileSpreadsheet
+  HelpCircle, FileDown, FileSpreadsheet, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -69,6 +69,9 @@ export default function CashierDashboard() {
 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<string>("Normal");
+
+  // State untuk kontrol Buka/Tutup Sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem("isAuthenticated");
@@ -198,7 +201,7 @@ export default function CashierDashboard() {
       
       const newInv = inventory.map(item => {
         const totalQtyInCart = cart.filter(c => c.id === item.id).reduce((sum, current) => sum + current.qty, 0);
-        return totalQtyInCart > 0 ? { ...item, stock: item.stock - totalQtyInCart, sold: (item.sold || 0) + totalQtyInCart } : item;
+        return totalQtyInCart > 0 ? { ...item, stock: item.stock - totalQtyInCart } : item;
       });
       updateSharedInventory(newInv);
   
@@ -253,23 +256,23 @@ export default function CashierDashboard() {
   return (
     <div className={`flex h-screen bg-[#F8FAFC] text-slate-800 overflow-hidden ${jakarta.className}`}>
       
-      {/* SIDEBAR - CLEAN WHITE */}
-      <aside className="w-[260px] bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20">
+      {/* SIDEBAR - BISA DIBUKA TUTUP */}
+      <aside className={`bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[260px]" : "w-0 opacity-0 overflow-hidden border-none"}`}>
         
         {/* LOGO AREA */}
-        <div className="h-24 flex items-center px-8 border-b border-slate-100">
+        <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0">
           <img 
             src="Cashier1.png" 
             alt="Logo Kasir" 
             className="w-10 h-10 mr-3 object-contain drop-shadow-sm" 
           />
-          <span className="font-extrabold text-slate-800 text-xl tracking-tight">
+          <span className="font-extrabold text-slate-800 text-xl tracking-tight whitespace-nowrap">
             Kasir<span className="text-[#FF0055]">.</span>
           </span>
         </div>
 
         {/* NAVIGATION */}
-        <nav className="flex-1 px-5 space-y-2 mt-8 overflow-y-auto">
+        <nav className="flex-1 px-5 space-y-2 mt-8 overflow-y-auto w-[260px]">
           <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Menu Utama</p>
           {[
             { id: "kasir", icon: ShoppingCart, label: "Terminal Kasir" },
@@ -286,7 +289,7 @@ export default function CashierDashboard() {
               }`}
             >
               <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} className={activeTab === item.id ? "text-white" : "text-slate-400"} />
-              <span>{item.label}</span>
+              <span className="whitespace-nowrap">{item.label}</span>
               {item.count ? <span className={`ml-auto text-[10px] px-2.5 py-0.5 rounded-full font-black ${activeTab === item.id ? 'bg-white/30 text-white' : 'bg-slate-200 text-slate-500'}`}>{item.count}</span> : null}
             </button>
           ))}
@@ -296,31 +299,43 @@ export default function CashierDashboard() {
              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Lainnya</p>
              <button onClick={() => setShowHelpCenter(true)} className="w-full flex items-center gap-4 px-4 py-3.5 rounded-[1.25rem] transition-all font-bold text-sm bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50">
                 <HelpCircle size={20} strokeWidth={2} className="text-slate-400"/>
-                <span>Pusat Bantuan</span>
+                <span className="whitespace-nowrap">Pusat Bantuan</span>
              </button>
           </div>
         </nav>
 
         {/* LOGOUT */}
-        <div className="p-6 border-t border-slate-100">
+        <div className="p-6 border-t border-slate-100 shrink-0 w-[260px]">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
             <LogOut size={20} />
-            <span>Keluar</span>
+            <span className="whitespace-nowrap">Keluar</span>
           </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA]">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA] transition-all duration-300">
         
-        {/* HEADER */}
-        <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
-          <div>
-            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">SkinPOS Terminal</h1>
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        {/* HEADER DENGAN TOMBOL TOGGLE SIDEBAR (GEMINI STYLE) */}
+        <header className="h-24 bg-white border-b border-slate-200 px-6 lg:px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
+          <div className="flex items-center gap-4">
+            <button 
+               onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center"
+               title={isSidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
+            >
+               {isSidebarOpen ? <PanelLeftClose size={22} strokeWidth={2}/> : <PanelLeftOpen size={22} strokeWidth={2}/>}
+            </button>
+            <div>
+              <h1 className="text-[18px] lg:text-[22px] font-extrabold text-slate-800 tracking-tight">SkinPOS Terminal</h1>
+              <p className="text-[10px] lg:text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-             <div className="w-20 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center font-bold text-[#FF0055] text-sm">Elberth</div>
+             <div className="w-10 h-10 lg:w-20 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center font-bold text-[#FF0055] text-sm">
+                <span className="hidden lg:block">Elberth</span>
+                <span className="block lg:hidden">E</span>
+             </div>
           </div>
         </header>
 
@@ -339,26 +354,29 @@ export default function CashierDashboard() {
                   </div>
                 </div>
 
-                {/* Product Grid */}
-                <div className="flex-1 overflow-y-auto p-8 pt-6">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* Product Grid - RESPONSIVE (MENCEGAH TEKS KELUAR) */}
+                <div className="flex-1 overflow-y-auto p-4 lg:p-8 pt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                     {inventory.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                       <div key={item.id} className="relative group">
-                        <button onClick={() => handleProductClick(item)} className={`w-full bg-white border border-slate-200 rounded-[1.5rem] p-6 text-left transition-all flex flex-col h-[200px] ${item.stock <= 0 ? 'opacity-50 grayscale' : 'hover:border-[#FF0055] hover:shadow-[0_10px_30px_rgba(255,0,85,0.06)] hover:-translate-y-1'}`}>
-                          <div className="mb-4 flex items-center justify-between w-full">
+                        <button onClick={() => handleProductClick(item)} className={`w-full h-full min-h-[180px] bg-white border border-slate-200 rounded-[1.5rem] p-4 lg:p-6 text-left transition-all flex flex-col justify-between ${item.stock <= 0 ? 'opacity-50 grayscale' : 'hover:border-[#FF0055] hover:shadow-[0_10px_30px_rgba(255,0,85,0.06)] hover:-translate-y-1'}`}>
+                          <div className="mb-2 lg:mb-4 flex items-center justify-between w-full">
                              <div className={`text-slate-300 ${item.stock > 0 && 'group-hover:text-[#FF0055] transition-colors'}`}>
-                               <PackagePlus size={28} strokeWidth={1.5} />
+                               <PackagePlus className="w-5 h-5 lg:w-7 lg:h-7" strokeWidth={1.5} />
                              </div>
-                             {item.stock <= 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">Habis</span>}
+                             {item.stock <= 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded text-[8px] lg:text-[9px] font-black uppercase tracking-widest">Habis</span>}
                           </div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                            {item.type === "Product" ? "Produk" : item.type === "Treatment" ? "Layanan" : item.type}
-                          </p>
-                          <h3 className="text-[14px] font-bold text-slate-800 leading-snug flex-1">{item.name}</h3>
                           
-                          {/* Harga dikembalikan seperti semula */}
-                          <p className="text-[18px] font-black text-slate-900 mt-2">{formatRupiah(item.price)}</p>
-
+                          <div className="flex-1">
+                             <p className="text-[8px] lg:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 break-words">
+                               {item.type === "Produk" || item.type === "Product" ? "Produk" : "Layanan"}
+                             </p>
+                             <h3 className="text-[11px] lg:text-[14px] font-bold text-slate-800 leading-snug line-clamp-2 w-full">{item.name}</h3>
+                          </div>
+                          
+                          <p className="text-[14px] lg:text-[18px] font-black text-slate-900 mt-3 break-words w-full">
+                             {formatRupiah(item.price)}
+                          </p>
                         </button>
                       </div>
                     ))}
