@@ -120,7 +120,7 @@ export default function LoginPage() {
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Masukkan username Anda" 
+                    placeholder="Masukkan nama pengguna Anda" 
                     className="w-full bg-white border-2 border-pink-50 text-slate-800 pl-14 pr-5 py-4 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-rose-50 focus:border-[#FF0055] transition-all font-bold placeholder:font-medium placeholder:text-pink-200 shadow-[0_2px_10px_rgba(255,0,85,0.02)]"
                     required
                   />

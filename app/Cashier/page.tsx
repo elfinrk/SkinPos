@@ -116,7 +116,7 @@ export default function CashierDashboard() {
       showToast("error", "Stok Habis!", `${item.name} tidak tersedia.`);
       return;
     }
-    if (item.type === "Produk" || item.type === "Produk") {
+    if (item.type === "Produk" || item.type === "Product") {
       setSelectedProduct(item);
       setSelectedVariant("Normal");
     } else {
@@ -190,7 +190,7 @@ export default function CashierDashboard() {
       const newOrder = { 
         id: orderId, items: [...cart], member: activeMember, subtotal, 
         discountAmount: discount, grandTotal: subtotal - discount, 
-        time: formatWaktu(), // Menggunakan format 24 jam dengan titik
+        time: formatWaktu(), 
         status: "pending" 
       };
       
@@ -198,7 +198,7 @@ export default function CashierDashboard() {
       
       const newInv = inventory.map(item => {
         const totalQtyInCart = cart.filter(c => c.id === item.id).reduce((sum, current) => sum + current.qty, 0);
-        return totalQtyInCart > 0 ? { ...item, stock: item.stock - totalQtyInCart } : item;
+        return totalQtyInCart > 0 ? { ...item, stock: item.stock - totalQtyInCart, sold: (item.sold || 0) + totalQtyInCart } : item;
       });
       updateSharedInventory(newInv);
   
@@ -215,8 +215,6 @@ export default function CashierDashboard() {
     const targetItem = inventory.find(i => i.id === stockInput.id);
     if (stockType === "keluar" && targetItem.stock < stockInput.qty) return showToast("error", "Stok Kurang", "Melebihi fisik.");
     
-    // Perbaikan: Mengubah format tanggal (YYYY-MM-DD) dari date picker ke format sederhana jika diperlukan, 
-    // namun kita biarkan saja sesuai output date picker agar konsisten jika ingin diedit lagi.
     const updatedInv = inventory.map(item => item.id === stockInput.id ? { ...item, stock: stockType === "masuk" ? item.stock + Number(stockInput.qty) : item.stock - Number(stockInput.qty), exp: stockType === "masuk" && stockInput.expDate ? stockInput.expDate : item.exp } : item);
     updateSharedInventory(updatedInv);
     setStockInput({ id: "", qty: 0, reason: "rusak", expDate: "" });
@@ -230,7 +228,7 @@ export default function CashierDashboard() {
 
   const handleSelesaikanTransaksi = (order: any) => {
     setShowReceipt(order);
-    const updated = orders.map(o => o.id === order.id ? { ...o, status: "Selesai" } : o);
+    const updated = orders.map(o => o.id === order.id ? { ...o, status: "completed" } : o);
     updateSharedOrders(updated);
   };
 
@@ -354,10 +352,13 @@ export default function CashierDashboard() {
                              {item.stock <= 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">Habis</span>}
                           </div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                            {item.type === "Produk" ? "Produk" : item.type === "Treatment" ? "Layanan" : item.type}
+                            {item.type === "Product" ? "Produk" : item.type === "Treatment" ? "Layanan" : item.type}
                           </p>
                           <h3 className="text-[14px] font-bold text-slate-800 leading-snug flex-1">{item.name}</h3>
+                          
+                          {/* Harga dikembalikan seperti semula */}
                           <p className="text-[18px] font-black text-slate-900 mt-2">{formatRupiah(item.price)}</p>
+
                         </button>
                       </div>
                     ))}
@@ -450,7 +451,7 @@ export default function CashierDashboard() {
                     <button onClick={() => setStockType("keluar")} className={`flex-1 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${stockType === "keluar" ? "bg-white text-slate-800 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}>Keluar</button>
                   </div>
                   <div className="space-y-6">
-                    <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Produk</label>
+                    <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Item Produk</label>
                       <select value={stockInput.id} onChange={(e) => setStockInput({...stockInput, id: e.target.value})} className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]">
                         <option value="">-- Pilih SKU --</option>
                         {inventory.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
@@ -461,7 +462,6 @@ export default function CashierDashboard() {
                     </div>
                     {stockType === "masuk" && (
                       <div><label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">Tanggal Kedaluwarsa</label>
-                        {/* INI BAGIAN YANG DIUBAH MENJADI TYPE="DATE" */}
                         <input type="date" value={stockInput.expDate} onChange={(e) => setStockInput({...stockInput, expDate: e.target.value})} className="w-full px-4 py-4 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 bg-[#FAFAFA]" />
                       </div>
                     )}
@@ -480,7 +480,7 @@ export default function CashierDashboard() {
                 <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white"><h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-widest">Status Inventaris</h3><span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full uppercase tracking-widest border border-emerald-100">Aktif / Terkini</span></div>
                 <div className="flex-1 overflow-y-auto">
                   <table className="w-full text-left">
-                    <thead><tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-50 border-b border-slate-100"><th className="px-8 py-5">Detail Item</th><th className="px-8 py-5 text-center">Status / Expired</th><th className="px-8 py-5 text-right">Stok Fisik</th></tr></thead>
+                    <thead><tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-50 border-b border-slate-100"><th className="px-8 py-5">Detail Item</th><th className="px-8 py-5 text-center">Status</th><th className="px-8 py-5 text-right">Stok Fisik</th></tr></thead>
                     <tbody className="divide-y divide-slate-100">
                       {inventory.map(i => (
                         <tr key={i.id} className="hover:bg-slate-50/50 transition-colors">
@@ -488,8 +488,6 @@ export default function CashierDashboard() {
                           <td className="px-8 py-6 text-center">
                              <div className="flex flex-col items-center gap-1.5">
                                {i.stock < 10 ? <span className="text-[9px] font-bold bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg border border-rose-100 uppercase inline-block">Menipis</span> : <span className="text-[9px] font-bold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-100 uppercase inline-block">Aman</span>}
-                               {/* DIPERBAIKI JUGA DI SINI */}
-                               {(i.type === "Produk" || i.type === "Produk") && <span className="text-[9px] font-bold text-slate-400">Exp: {i.exp}</span>}
                              </div>
                           </td>
                           <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">{i.stock > 900 ? '∞' : i.stock}</td>
@@ -528,7 +526,7 @@ export default function CashierDashboard() {
                     <div className="flex justify-between items-start mb-6 pb-5 border-b border-slate-100">
                       <div>
                         <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">{order.id}</span>
-                        <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time}</p>
+                        <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time ? order.time.replace(':', '.') : ''}</p>
                       </div>
                       <p className="text-xl font-black text-slate-800">{formatRupiah(order.grandTotal)}</p>
                     </div>
@@ -541,7 +539,7 @@ export default function CashierDashboard() {
                            <button onClick={() => handleVoidRequest(order)} className="text-[11px] font-bold py-3 rounded-xl border border-slate-200 text-[#FF0055] hover:bg-rose-50 hover:border-rose-200 transition-all bg-white shadow-sm">Ajukan Pembatalan</button>
                            <button onClick={() => handleSelesaikanTransaksi(order)} className="text-[11px] font-bold py-3 rounded-xl bg-slate-800 text-white hover:bg-[#FF0055] transition-all shadow-md">Selesai</button>
                         </div>
-                      ) : <div className={`text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${order.status === 'Selesai' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{order.status === 'Selesai' ? 'Selesai' : 'Batal'}</div>}
+                      ) : <div className={`text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${order.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{order.status === 'completed' ? 'Selesai' : 'Batal'}</div>}
                     </div>
                   </div>
                 ))}
