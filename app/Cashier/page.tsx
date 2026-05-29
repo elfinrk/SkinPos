@@ -6,7 +6,8 @@ import {
   ShoppingCart, Search, UserCheck, CheckCircle2, 
   PackagePlus, History, LogOut, Boxes, XCircle, 
   Loader2, Plus, Minus, ReceiptText, HelpCircle, 
-  FileDown, FileSpreadsheet, PanelLeftClose, PanelLeftOpen, UsersRound, KeyRound, ShieldAlert, Clock
+  FileDown, FileSpreadsheet, PanelLeftClose, PanelLeftOpen, 
+  UsersRound, KeyRound, ShieldAlert, Clock, Info, AlertTriangle
 } from "lucide-react";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -60,7 +61,7 @@ export default function CashierDashboard() {
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [voidTarget, setVoidTarget] = useState<any>(null); 
   const [voidPinInput, setVoidPinInput] = useState("");
-  const [toast, setToast] = useState<{type: 'success' | 'error' | 'info', title: string, subtitle: string} | null>(null);
+  const [toast, setToast] = useState<{type: 'success' | 'error' | 'info' | 'warning', title: string, subtitle: string} | null>(null);
 
   const [stockType, setStockType] = useState<"masuk" | "keluar">("masuk");
   const [stockInput, setStockInput] = useState<{id: string, qty: number, reason: string, expDate: string}>({ id: "", qty: 0, reason: "rusak", expDate: "" });
@@ -116,7 +117,7 @@ export default function CashierDashboard() {
     localStorage.setItem("skinpos_inventory", JSON.stringify(newInv));
   };
 
-  const showToast = (type: 'success' | 'error' | 'info', title: string, subtitle: string) => {
+  const showToast = (type: 'success' | 'error' | 'info' | 'warning', title: string, subtitle: string) => {
     setToast({ type, title, subtitle });
     setTimeout(() => setToast(null), 3000);
   };
@@ -577,7 +578,6 @@ export default function CashierDashboard() {
                            <input type="text" value={newMember.phone} onChange={(e)=>setNewMember({...newMember, phone: e.target.value})} placeholder="08..." className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" />
                         </div>
                         <div>
-                           {/* DITAMBAHKAN INPUT TANGGAL LAHIR */}
                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Tanggal Lahir</label>
                            <input type="date" value={newMember.dob} onChange={(e)=>setNewMember({...newMember, dob: e.target.value})} className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 text-slate-500" />
                         </div>
@@ -609,7 +609,6 @@ export default function CashierDashboard() {
                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                              <td className="px-8 py-5 font-bold text-slate-800 text-[13px]">{m.name}</td>
                              <td className="px-8 py-5 font-semibold text-slate-500 text-[12px]">{m.phone}</td>
-                             {/* DITAMBAHKAN TAMPILAN TANGGAL LAHIR */}
                              <td className="px-8 py-5 font-semibold text-slate-500 text-[12px]">{m.dob || "-"}</td>
                              <td className="px-8 py-5 text-center"><span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[11px] font-black border border-emerald-100">{m.discount * 100}%</span></td>
                            </tr>
@@ -695,12 +694,12 @@ export default function CashierDashboard() {
                        <p className="text-xs text-slate-500 leading-relaxed">Silakan periksa koneksi kabel printer, atau hubungi langsung Divisi IT di nomor Ekstensi 101.</p>
                     </div>
                  </div>
-                 <button onClick={() => setShowHelpCenter(false)} className="w-full py-4 rounded-2xl font-bold bg-slate-800 text-white hover:bg-[#FF0055] transition-all text-[11px] uppercase tracking-widest">Tutup</button>
+                 <button onClick={() => setShowHelpCenter(false)} className="w-full py-4 rounded-2xl font-bold bg-slate-800 text-white hover:bg-[#FF0055] transition-all text-[11px] uppercase tracking-widest shadow-md">Tutup</button>
               </div>
            </div>
         )}
 
-        {/* LOGOUT CONFIRM */}
+        {/* MODAL LOGOUT CONFIRM */}
         {showLogoutConfirm && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-in fade-in">
              <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center border border-slate-100">
@@ -718,9 +717,12 @@ export default function CashierDashboard() {
         {/* TOAST NOTIFICATION */}
         {toast && (
           <div className="fixed bottom-8 right-8 z-[1000] animate-in slide-in-from-bottom-5">
-            <div className="bg-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[320px]">
-              {toast.type === 'success' ? <CheckCircle2 className="text-emerald-400" size={24} /> : toast.type === 'error' ? <XCircle className="text-[#FF0055]" size={24} /> : <Info className="text-blue-400" size={24} />}
-              <div><h4 className="font-bold text-white text-[13px] tracking-wide mb-0.5">{toast.title}</h4><p className="text-[11px] font-medium text-slate-400">{toast.subtitle}</p></div>
+            <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 min-w-[320px] border ${toast.type === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-slate-900 border-slate-800'}`}>
+              {toast.type === 'success' ? <CheckCircle2 className="text-emerald-400" size={24} /> : toast.type === 'error' ? <XCircle className="text-rose-500" size={24} /> : toast.type === 'warning' ? <AlertTriangle className="text-amber-500" size={24}/> : <Info className="text-blue-400" size={24} />}
+              <div>
+                <h4 className={`font-bold text-[13px] tracking-wide mb-0.5 ${toast.type === 'warning' ? 'text-amber-900' : 'text-white'}`}>{toast.title}</h4>
+                <p className={`text-[11px] font-medium ${toast.type === 'warning' ? 'text-amber-700' : 'text-slate-400'}`}>{toast.subtitle}</p>
+              </div>
             </div>
           </div>
         )}
