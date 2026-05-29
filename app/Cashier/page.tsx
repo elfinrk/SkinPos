@@ -358,7 +358,7 @@ export default function CashierDashboard() {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 lg:p-8 pt-6">
+                <div className="flex-1 overflow-y-auto p-4 lg:p-8 pt-6 pb-10">
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                     {inventory.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                       <div key={item.id} className="relative group">
@@ -684,16 +684,212 @@ export default function CashierDashboard() {
               <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><HelpCircle size={32}/></div>
                  <h3 className="text-center font-black text-slate-800 text-xl mb-6">Pusat Bantuan</h3>
-                 <div className="space-y-3 mb-8">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                       <p className="font-bold text-sm text-slate-800 mb-1">Cara membatalkan transaksi?</p>
-                       <p className="text-xs text-slate-500 leading-relaxed">Buka tab "Riwayat & Laporan", pilih transaksi "Ajukan Pembatalan", lalu minta Kata Sandi Otorisasi Manager.</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                       <p className="font-bold text-sm text-slate-800 mb-1">Peralatan kasir macet?</p>
-                       <p className="text-xs text-slate-500 leading-relaxed">Silakan periksa koneksi kabel printer, atau hubungi langsung Divisi IT di nomor Ekstensi 101.</p>
-                    </div>
-                 </div>
+                 {/* PUSAT BANTUAN MODAL */}
+{showHelpCenter && (
+  <div className="fixed inset-0 backdrop-blur-sm z-[800] flex items-center justify-center p-6">
+    
+    <div className="w-full max-w-2xl h-[78vh] bg-white rounded-[2rem] border border-slate-200 shadow-[0_20px_60px_rgba(15,23,42,0.10)] overflow-hidden flex flex-col">
+      
+      {/* HEADER */}
+      <div className="px-8 pt-8 pb-5 border-b border-slate-100 shrink-0">
+        <div className="flex items-start justify-between gap-4">
+          
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center border border-rose-100">
+              <HelpCircle size={24} className="text-[#FF0055]" />
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF0055] mb-1">
+                Bantuan Sistem
+              </p>
+
+              <h2 className="text-[20px] font-extrabold text-slate-800 tracking-tight">
+                Pusat Bantuan Kasir
+              </h2>
+
+              <p className="text-[12px] text-slate-500 mt-1">
+                Panduan cepat saat terjadi kendala operasional kasir.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowHelpCenter(false)}
+            className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-[#FF0055] hover:border-rose-200 transition-all shrink-0"
+          >
+            <XCircle size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        
+        <div className="space-y-7">
+
+          {/* PEMBATALAN */}
+          <div className="border-b border-slate-100 pb-7">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center">
+                <ReceiptText size={16} className="text-[#FF0055]" />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-800 text-[14px]">
+                  Cara Membatalkan Transaksi
+                </h3>
+
+                <p className="text-[11px] text-slate-500">
+                  Ikuti langkah berikut untuk melakukan pembatalan transaksi.
+                </p>
+              </div>
+            </div>
+
+            <ol className="space-y-2 pl-5 list-decimal text-[12px] text-slate-600 leading-[1.7]">
+              <li>Buka menu <span className="font-bold text-slate-800">Riwayat & Laporan</span>.</li>
+              <li>Pilih transaksi yang ingin dibatalkan.</li>
+              <li>Tekan tombol <span className="font-bold text-slate-800">Ajukan Pembatalan</span>.</li>
+              <li>Masukkan PIN otorisasi manager.</li>
+              <li>Stok akan otomatis kembali ke inventaris.</li>
+            </ol>
+          </div>
+
+          {/* KENDALA */}
+          <div className="border-b border-slate-100 pb-7">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-amber-500" />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-800 text-[14px]">
+                  Jika Sistem Bermasalah
+                </h3>
+
+                <p className="text-[11px] text-slate-500">
+                  Langkah cepat sebelum menghubungi tim teknis.
+                </p>
+              </div>
+            </div>
+
+            <ol className="space-y-2 pl-5 list-decimal text-[12px] text-slate-600 leading-[1.7]">
+              <li>Pastikan koneksi internet stabil.</li>
+              <li>Periksa kabel printer atau scanner.</li>
+              <li>Refresh halaman sistem terlebih dahulu.</li>
+              <li>Login ulang jika sistem lambat.</li>
+              <li>Hubungi tim IT bila masalah berlanjut.</li>
+            </ol>
+          </div>
+
+          {/* KONTAK */}
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                <ShieldAlert size={16} className="text-emerald-600" />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-800 text-[14px]">
+                  Kontak Bantuan
+                </h3>
+
+                <p className="text-[11px] text-slate-500">
+                  Hubungi bagian terkait jika membutuhkan bantuan.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+
+              {/* IT SUPPORT */}
+              <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">
+                    Divisi IT
+                  </p>
+
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Error sistem & perangkat kasir
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-[13px] font-black text-slate-800">
+                    Dimas Saputra
+                  </p>
+
+                  <p className="text-[11px] text-[#FF0055] font-bold mt-1">
+                    IT Support
+                  </p>
+                </div>
+              </div>
+
+              {/* SUPERVISOR */}
+              <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">
+                    Supervisor Operasional
+                  </p>
+
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Kendala transaksi & operasional
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-[13px] font-black text-slate-800">
+                    Clara Wijaya
+                  </p>
+
+                  <p className="text-[11px] text-[#FF0055] font-bold mt-1">
+                    Supervisor
+                  </p>
+                </div>
+              </div>
+
+              {/* MANAGER */}
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">
+                    Bantuan Manager
+                  </p>
+
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Otorisasi pembatalan transaksi
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-[13px] font-black text-slate-800">
+                    Kevin Jonathan
+                  </p>
+
+                  <p className="text-[11px] text-[#FF0055] font-bold mt-1">
+                    Manager Operasional
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* FOOTER */}
+      <div className="px-8 py-5 border-t border-slate-100 bg-white shrink-0">
+        <button
+          onClick={() => setShowHelpCenter(false)}
+          className="w-full py-3.5 rounded-xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-[0.15em] shadow-lg shadow-rose-500/10"
+        >
+          Tutup Bantuan
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
                  <button onClick={() => setShowHelpCenter(false)} className="w-full py-4 rounded-2xl font-bold bg-slate-800 text-white hover:bg-[#FF0055] transition-all text-[11px] uppercase tracking-widest shadow-md">Tutup</button>
               </div>
            </div>
