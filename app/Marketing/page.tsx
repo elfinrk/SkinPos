@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { 
   Tag, Users, BarChart3, LogOut, CheckCircle2, 
   Plus, Search, Megaphone, Trash2, Info, XCircle,
-  TrendingDown, TrendingUp, Flame, Send, PackageOpen
+  TrendingDown, TrendingUp, Flame, Send, PackageOpen,
+  PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 
 // --- MENGGUNAKAN FONT PLUS JAKARTA SANS (SAMA DENGAN KASIR/MANAGER) ---
@@ -25,6 +26,7 @@ export default function MarketingDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState<"analytics" | "promo" | "broadcast">("analytics");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const [promos, setPromos] = useState(INITIAL_PROMOS);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -93,11 +95,11 @@ export default function MarketingDashboard() {
   return (
     <div className={`flex h-screen bg-[#F8FAFC] text-slate-800 overflow-hidden ${jakarta.className}`}>
       
-      {/* SIDEBAR */}
-      <aside className="w-[260px] bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20">
+      {/* SIDEBAR DENGAN TOGGLE */}
+      <aside className={`bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[260px]" : "w-0 opacity-0 overflow-hidden border-none"}`}>
         
         {/* LOGO AREA */}
-        <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0">
+        <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0 w-[260px]">
           <img 
             src="image_b6c0b9.png" 
             alt="Logo" 
@@ -109,7 +111,7 @@ export default function MarketingDashboard() {
         </div>
 
         {/* NAVIGATION */}
-        <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto">
+        <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto w-[260px]">
           <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Menu Utama</p>
           {[
             { id: "analytics", icon: BarChart3, label: "Analisis Bisnis" },
@@ -132,7 +134,7 @@ export default function MarketingDashboard() {
         </nav>
 
         {/* LOGOUT */}
-        <div className="p-6 border-t border-slate-100 shrink-0">
+        <div className="p-6 border-t border-slate-100 shrink-0 w-[260px]">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
             <LogOut size={18} />
             <span>Keluar</span>
@@ -141,20 +143,29 @@ export default function MarketingDashboard() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA]">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA] transition-all duration-300">
         
-        {/* HEADER */}
-        <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
-          <div>
-            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight capitalize">
-              {activeTab === "analytics" ? "Analisis Bisnis" : activeTab === "promo" ? "Manajemen Kampanye" : "Hubungan Pelanggan"}
-            </h1>
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-              Klinik Rosereve Japan
-            </p>
+        {/* HEADER DENGAN TOMBOL TOGGLE */}
+        <header className="h-24 bg-white border-b border-slate-200 px-6 lg:px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
+          <div className="flex items-center gap-4">
+            <button 
+               onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center"
+               title={isSidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
+            >
+               {isSidebarOpen ? <PanelLeftClose size={22} strokeWidth={2}/> : <PanelLeftOpen size={22} strokeWidth={2}/>}
+            </button>
+            <div>
+              <h1 className="text-[18px] lg:text-[22px] font-extrabold text-slate-800 tracking-tight capitalize">
+                {activeTab === "analytics" ? "Analisis Bisnis" : activeTab === "promo" ? "Manajemen Kampanye" : "Hubungan Pelanggan"}
+              </h1>
+              <p className="text-[10px] lg:text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                Klinik Rosereve Japan
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-             <div className="bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 flex items-center gap-3 shadow-sm">
+             <div className="hidden lg:flex bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 items-center gap-3 shadow-sm">
                 <span className="text-[12px] font-bold text-slate-700 tracking-wide">Tim Promosi</span>
              </div>
              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center font-bold text-[#FF0055] text-sm">MK</div>
@@ -165,7 +176,7 @@ export default function MarketingDashboard() {
           
           {/* TAB 1: PRODUCT INSIGHT & ANALYTICS */}
           {activeTab === "analytics" && (
-            <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300">
+            <div className="h-full p-6 lg:p-10 overflow-y-auto animate-in fade-in duration-300">
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-4">
                      <div className="w-14 h-14 bg-pink-50 text-[#FF0055] rounded-2xl flex items-center justify-center"><Tag size={24}/></div>
@@ -247,8 +258,8 @@ export default function MarketingDashboard() {
 
           {/* TAB 2: PROMO & BUNDLING */}
           {activeTab === "promo" && (
-            <div className="h-full p-10 flex gap-8 animate-in fade-in duration-300 overflow-y-auto bg-[#F4F7FA]">
-              <div className="w-[380px] shrink-0">
+            <div className="h-full p-6 lg:p-10 flex flex-col lg:flex-row gap-8 animate-in fade-in duration-300 overflow-y-auto bg-[#F4F7FA]">
+              <div className="w-full lg:w-[380px] shrink-0">
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
                   <h3 className="font-extrabold text-slate-800 mb-6 text-sm flex items-center gap-2"><Plus size={18} className="text-[#FF0055]" /> Rilis Promo Baru</h3>
                   <form onSubmit={handleAddPromo} className="space-y-6">
@@ -308,17 +319,17 @@ export default function MarketingDashboard() {
 
           {/* TAB 3: CRM & BROADCAST */}
           {activeTab === "broadcast" && (
-             <div className="h-full p-10 overflow-y-auto animate-in fade-in duration-300 bg-[#F4F7FA]">
+             <div className="h-full p-6 lg:p-10 overflow-y-auto animate-in fade-in duration-300 bg-[#F4F7FA]">
                <div className="max-w-4xl mx-auto">
-                  <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mb-8 flex items-center justify-between p-8">
-                     <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-[#FF0055] text-white rounded-[1.25rem] flex items-center justify-center shadow-lg shadow-rose-500/25"><Megaphone size={28}/></div>
+                  <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mb-8 flex flex-col lg:flex-row items-center justify-between p-8 gap-6 text-center lg:text-left">
+                     <div className="flex flex-col lg:flex-row items-center gap-5">
+                        <div className="w-16 h-16 bg-[#FF0055] text-white rounded-[1.25rem] flex items-center justify-center shadow-lg shadow-rose-500/25 shrink-0"><Megaphone size={28}/></div>
                         <div>
                            <h2 className="text-xl font-extrabold text-slate-800 mb-1">Pemasaran Langsung (Broadcast)</h2>
                            <p className="text-[12px] font-medium text-slate-500">Kirim pesan WhatsApp massal ke {members.length} pelanggan setia Anda.</p>
                         </div>
                      </div>
-                     <button onClick={handleBroadcast} className="px-6 py-4 bg-slate-800 text-white rounded-2xl font-black text-[11px] tracking-[0.2em] uppercase hover:bg-[#FF0055] shadow-lg transition-all flex items-center gap-2">
+                     <button onClick={handleBroadcast} className="w-full lg:w-auto px-6 py-4 bg-slate-800 text-white rounded-2xl font-black text-[11px] tracking-[0.2em] uppercase hover:bg-[#FF0055] shadow-lg transition-all flex items-center justify-center gap-2">
                         <Send size={16}/> Kirim Pesan
                      </button>
                   </div>

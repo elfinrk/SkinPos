@@ -4,10 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ShoppingCart, Search, UserCheck, CheckCircle2, 
-  PackagePlus, ShieldAlert, Clock, XCircle, History, 
-  LogOut, Boxes, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, 
-  Info, KeyRound, Loader2, Plus, Minus, ReceiptText, Sparkles,
-  HelpCircle, FileDown, FileSpreadsheet, PanelLeftClose, PanelLeftOpen
+  PackagePlus, History, LogOut, Boxes, XCircle, 
+  Loader2, Plus, Minus, ReceiptText, HelpCircle, 
+  FileDown, FileSpreadsheet, PanelLeftClose, PanelLeftOpen, UsersRound, KeyRound, ShieldAlert, Clock
 } from "lucide-react";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -25,16 +24,14 @@ const INITIAL_INVENTORY = [
 ];
 
 const MEMBER_DB = [
-  { phone: "08123456789", name: "Nanda", discount: 0.10 },
-  { phone: "08987654321", name: "Sarah", discount: 0.15 },
+  { phone: "08123456789", name: "Nanda", discount: 0.10, dob: "1998-05-12" },
+  { phone: "08987654321", name: "Sarah", discount: 0.15, dob: "2001-11-23" },
 ];
 
-// Helper untuk format rupiah (Rp120.000)
 const formatRupiah = (number: number) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
 };
 
-// Helper format 24 jam (misal 17.23)
 const formatWaktu = () => {
   const date = new Date();
   const hours = String(date.getHours()).padStart(2, '0');
@@ -45,17 +42,18 @@ const formatWaktu = () => {
 export default function CashierDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState<"kasir" | "stok" | "void">("kasir");
+  const [activeTab, setActiveTab] = useState<"kasir" | "stok" | "void" | "members">("kasir");
   const [inventory, setInventory] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [memberPhone, setMemberPhone] = useState("");
   const [phoneError, setPhoneError] = useState(""); 
   const [isCheckingMember, setIsCheckingMember] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
-  const [activeMember, setActiveMember] = useState<{name: string, discount: number} | null>(null);
+  const [activeMember, setActiveMember] = useState<{name: string, discount: number, dob?: string} | null>(null);
   
   const [showReceipt, setShowReceipt] = useState<any>(null); 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -69,9 +67,9 @@ export default function CashierDashboard() {
 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<string>("Normal");
-
-  // State untuk kontrol Buka/Tutup Sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const [newMember, setNewMember] = useState({ name: "", phone: "", dob: "", discount: 10 });
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem("isAuthenticated");
@@ -91,8 +89,17 @@ export default function CashierDashboard() {
     const syncData = () => {
       const sOrders = localStorage.getItem("skinpos_orders");
       const sInv = localStorage.getItem("skinpos_inventory");
+      const sMembers = localStorage.getItem("skinpos_members");
+      
       if (sOrders) setOrders(JSON.parse(sOrders));
       if (sInv) setInventory(JSON.parse(sInv));
+      
+      if (sMembers) {
+        setMembers(JSON.parse(sMembers));
+      } else {
+        setMembers(MEMBER_DB);
+        localStorage.setItem("skinpos_members", JSON.stringify(MEMBER_DB));
+      }
     };
     syncData(); 
     const interval = setInterval(syncData, 1000); 
@@ -170,7 +177,7 @@ export default function CashierDashboard() {
     if (!memberPhone || phoneError) return;
     setIsCheckingMember(true);
     setTimeout(() => {
-      const member = MEMBER_DB.find(m => m.phone === memberPhone);
+      const member = members.find(m => m.phone === memberPhone);
       if(member) {
         setActiveMember(member);
         showToast("success", "Anggota Ditemukan", member.name);
@@ -251,33 +258,36 @@ export default function CashierDashboard() {
     } else showToast("error", "Akses Ditolak", "Kata Sandi Manager salah.");
   };
 
+  const handleAddMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if(!newMember.name || !newMember.phone || !newMember.dob) {
+        return showToast("error", "Data Tidak Lengkap", "Nama, No. HP, dan Tanggal Lahir wajib diisi.");
+    }
+    const updatedMembers = [{ phone: newMember.phone, name: newMember.name, dob: newMember.dob, discount: newMember.discount / 100 }, ...members];
+    setMembers(updatedMembers);
+    localStorage.setItem("skinpos_members", JSON.stringify(updatedMembers));
+    setNewMember({ name: "", phone: "", dob: "", discount: 10 });
+    showToast("success", "Berhasil", "Data Anggota VIP berhasil ditambahkan.");
+  };
+
   if (!isAuthorized) return null;
 
   return (
     <div className={`flex h-screen bg-[#F8FAFC] text-slate-800 overflow-hidden ${jakarta.className}`}>
       
-      {/* SIDEBAR - BISA DIBUKA TUTUP */}
+      {/* SIDEBAR */}
       <aside className={`bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[260px]" : "w-0 opacity-0 overflow-hidden border-none"}`}>
-        
-        {/* LOGO AREA */}
         <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0">
-          <img 
-            src="Cashier1.png" 
-            alt="Logo Kasir" 
-            className="w-10 h-10 mr-3 object-contain drop-shadow-sm" 
-          />
-          <span className="font-extrabold text-slate-800 text-xl tracking-tight whitespace-nowrap">
-            Kasir<span className="text-[#FF0055]">.</span>
-          </span>
+          <img src="Cashier1.png" alt="Logo Kasir" className="w-10 h-10 mr-3 object-contain drop-shadow-sm" />
+          <span className="font-extrabold text-slate-800 text-xl tracking-tight whitespace-nowrap">Kasir<span className="text-[#FF0055]">.</span></span>
         </div>
-
-        {/* NAVIGATION */}
         <nav className="flex-1 px-5 space-y-2 mt-8 overflow-y-auto w-[260px]">
           <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Menu Utama</p>
           {[
             { id: "kasir", icon: ShoppingCart, label: "Terminal Kasir" },
             { id: "stok", icon: Boxes, label: "Manajemen Stok" },
-            { id: "void", icon: History, label: "Riwayat & Laporan", count: orders.filter(o=>o.status==='pending').length }
+            { id: "void", icon: History, label: "Riwayat & Laporan", count: orders.filter(o=>o.status==='pending').length },
+            { id: "members", icon: UsersRound, label: "Data Anggota" }
           ].map((item) => (
             <button 
               key={item.id} 
@@ -293,8 +303,6 @@ export default function CashierDashboard() {
               {item.count ? <span className={`ml-auto text-[10px] px-2.5 py-0.5 rounded-full font-black ${activeTab === item.id ? 'bg-white/30 text-white' : 'bg-slate-200 text-slate-500'}`}>{item.count}</span> : null}
             </button>
           ))}
-
-          {/* HELP CENTER BUTTON */}
           <div className="pt-6 mt-6 border-t border-slate-100">
              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Lainnya</p>
              <button onClick={() => setShowHelpCenter(true)} className="w-full flex items-center gap-4 px-4 py-3.5 rounded-[1.25rem] transition-all font-bold text-sm bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50">
@@ -303,8 +311,6 @@ export default function CashierDashboard() {
              </button>
           </div>
         </nav>
-
-        {/* LOGOUT */}
         <div className="p-6 border-t border-slate-100 shrink-0 w-[260px]">
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all text-sm font-bold">
             <LogOut size={20} />
@@ -316,7 +322,6 @@ export default function CashierDashboard() {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#F4F7FA] transition-all duration-300">
         
-        {/* HEADER DENGAN TOMBOL TOGGLE SIDEBAR (GEMINI STYLE) */}
         <header className="h-24 bg-white border-b border-slate-200 px-6 lg:px-10 flex items-center justify-between shrink-0 shadow-sm z-10">
           <div className="flex items-center gap-4">
             <button 
@@ -344,9 +349,7 @@ export default function CashierDashboard() {
           {/* TAB KASIR */}
           {activeTab === "kasir" && (
             <div className="flex h-full animate-in fade-in duration-300">
-              
               <div className="flex-1 flex flex-col bg-[#F4F7FA]">
-                {/* Search Bar Area */}
                 <div className="p-8 pb-2">
                   <div className="relative">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -354,29 +357,22 @@ export default function CashierDashboard() {
                   </div>
                 </div>
 
-                {/* Product Grid - RESPONSIVE (MENCEGAH TEKS KELUAR) */}
                 <div className="flex-1 overflow-y-auto p-4 lg:p-8 pt-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                     {inventory.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                       <div key={item.id} className="relative group">
-                        <button onClick={() => handleProductClick(item)} className={`w-full h-full min-h-[180px] bg-white border border-slate-200 rounded-[1.5rem] p-4 lg:p-6 text-left transition-all flex flex-col justify-between ${item.stock <= 0 ? 'opacity-50 grayscale' : 'hover:border-[#FF0055] hover:shadow-[0_10px_30px_rgba(255,0,85,0.06)] hover:-translate-y-1'}`}>
+                        <button onClick={() => handleProductClick(item)} className={`w-full h-full min-h-[160px] bg-white border border-slate-200 rounded-[1.5rem] p-4 lg:p-5 text-left transition-all flex flex-col justify-between ${item.stock <= 0 ? 'opacity-50 grayscale' : 'hover:border-[#FF0055] hover:shadow-[0_10px_30px_rgba(255,0,85,0.06)] hover:-translate-y-1'}`}>
                           <div className="mb-2 lg:mb-4 flex items-center justify-between w-full">
-                             <div className={`text-slate-300 ${item.stock > 0 && 'group-hover:text-[#FF0055] transition-colors'}`}>
-                               <PackagePlus className="w-5 h-5 lg:w-7 lg:h-7" strokeWidth={1.5} />
-                             </div>
-                             {item.stock <= 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded text-[8px] lg:text-[9px] font-black uppercase tracking-widest">Habis</span>}
+                             <PackagePlus className="w-5 h-5 text-slate-300 group-hover:text-[#FF0055]" strokeWidth={1.5} />
+                             {item.stock <= 0 && <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">Habis</span>}
                           </div>
-                          
-                          <div className="flex-1">
-                             <p className="text-[8px] lg:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 break-words">
-                               {item.type === "Produk" || item.type === "Product" ? "Produk" : "Layanan"}
-                             </p>
-                             <h3 className="text-[11px] lg:text-[14px] font-bold text-slate-800 leading-snug line-clamp-2 w-full">{item.name}</h3>
+                          <div className="flex-1 min-h-0">
+                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">{item.type === "Produk" || item.type === "Product" ? "Produk" : "Layanan"}</p>
+                             <h3 className="text-[11px] lg:text-[13px] font-bold text-slate-800 leading-tight line-clamp-2">{item.name}</h3>
                           </div>
-                          
-                          <p className="text-[14px] lg:text-[18px] font-black text-slate-900 mt-3 break-words w-full">
-                             {formatRupiah(item.price)}
-                          </p>
+                          <div className="mt-3">
+                             <p className="text-[13px] lg:text-[16px] font-black text-slate-900">{formatRupiah(item.price)}</p>
+                          </div>
                         </button>
                       </div>
                     ))}
@@ -386,7 +382,6 @@ export default function CashierDashboard() {
 
               {/* CART SIDEBAR */}
               <div className="w-[400px] bg-white border-l border-slate-200 flex flex-col h-full shrink-0 shadow-[-4px_0_20px_rgba(0,0,0,0.03)]">
-                {/* Cart Header */}
                 <div className="p-8 border-b border-slate-100">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="font-extrabold text-slate-800 flex items-center gap-3 text-sm tracking-widest uppercase"><ShoppingCart size={18} className="text-[#FF0055]" /> KERANJANG</h2>
@@ -407,14 +402,16 @@ export default function CashierDashboard() {
                     <div className="mt-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-between animate-in zoom-in-95">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm"><UserCheck size={14} className="text-emerald-500"/></div>
-                        <p className="text-[12px] font-bold text-emerald-900">{activeMember.name}</p>
+                        <div>
+                          <p className="text-[12px] font-bold text-emerald-900">{activeMember.name}</p>
+                          {activeMember.dob && <p className="text-[9px] font-semibold text-emerald-700">Ultah: {activeMember.dob}</p>}
+                        </div>
                       </div>
                       <span className="bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-black tracking-widest">-{activeMember.discount * 100}%</span>
                     </div>
                   )}
                 </div>
 
-                {/* Cart Items */}
                 <div className="flex-1 overflow-y-auto p-8 space-y-4 bg-[#F4F7FA]">
                   {cart.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300">
@@ -442,7 +439,6 @@ export default function CashierDashboard() {
                   ))}
                 </div>
 
-                {/* Summary & Checkout */}
                 <div className="p-8 bg-white border-t border-slate-200">
                   <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3"><span>Subtotal</span><span className="text-slate-700">{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0))}</span></div>
                   {activeMember && <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-3"><span>Diskon</span><span>-{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount)}</span></div>}
@@ -562,6 +558,66 @@ export default function CashierDashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* TAB MANAJEMEN MEMBER DENGAN INPUT TANGGAL LAHIR */}
+          {activeTab === "members" && (
+            <div className="h-full p-10 overflow-y-auto animate-in fade-in bg-[#F4F7FA] flex gap-8">
+               <div className="w-[360px] shrink-0">
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                     <h3 className="font-extrabold text-slate-800 mb-6 flex items-center gap-2"><UserCheck size={20} className="text-[#FF0055]"/> Tambah Anggota VIP</h3>
+                     <form onSubmit={handleAddMember} className="space-y-5">
+                        <div>
+                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nama Anggota</label>
+                           <input type="text" value={newMember.name} onChange={(e)=>setNewMember({...newMember, name: e.target.value})} placeholder="Masukkan nama" className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" />
+                        </div>
+                        <div>
+                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nomor HP</label>
+                           <input type="text" value={newMember.phone} onChange={(e)=>setNewMember({...newMember, phone: e.target.value})} placeholder="08..." className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" />
+                        </div>
+                        <div>
+                           {/* DITAMBAHKAN INPUT TANGGAL LAHIR */}
+                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Tanggal Lahir</label>
+                           <input type="date" value={newMember.dob} onChange={(e)=>setNewMember({...newMember, dob: e.target.value})} className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50 text-slate-500" />
+                        </div>
+                        <div>
+                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Diskon Standar (%)</label>
+                           <input type="number" min="0" max="100" value={newMember.discount} onChange={(e)=>setNewMember({...newMember, discount: Number(e.target.value)})} className="w-full px-4 py-3.5 rounded-xl border border-slate-200 outline-none text-[13px] font-bold focus:border-[#FF0055] focus:ring-4 focus:ring-rose-50" />
+                        </div>
+                        <button type="submit" className="w-full py-4 bg-slate-800 text-white rounded-xl font-bold text-[11px] tracking-[0.2em] uppercase hover:bg-[#FF0055] shadow-md transition-all mt-2">Simpan Data</button>
+                     </form>
+                  </div>
+               </div>
+               <div className="flex-1 bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white">
+                     <h3 className="font-extrabold text-slate-800">Data Anggota</h3>
+                     <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full uppercase tracking-widest border border-slate-200">Total: {members.length}</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                     <table className="w-full text-left">
+                       <thead className="sticky top-0 bg-slate-50 border-b border-slate-100 z-10">
+                          <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                             <th className="px-8 py-5">Nama Anggota</th>
+                             <th className="px-8 py-5">Nomor HP</th>
+                             <th className="px-8 py-5">Tanggal Lahir</th>
+                             <th className="px-8 py-5 text-center">Hak Diskon</th>
+                          </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100">
+                         {members.map((m, idx) => (
+                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                             <td className="px-8 py-5 font-bold text-slate-800 text-[13px]">{m.name}</td>
+                             <td className="px-8 py-5 font-semibold text-slate-500 text-[12px]">{m.phone}</td>
+                             {/* DITAMBAHKAN TAMPILAN TANGGAL LAHIR */}
+                             <td className="px-8 py-5 font-semibold text-slate-500 text-[12px]">{m.dob || "-"}</td>
+                             <td className="px-8 py-5 text-center"><span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[11px] font-black border border-emerald-100">{m.discount * 100}%</span></td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                  </div>
+               </div>
             </div>
           )}
         </div>
