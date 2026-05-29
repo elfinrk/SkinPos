@@ -245,53 +245,250 @@ export default function FatPayrollDashboard() {
             </div>
           )}
 
-          {/* TAB 2: PAYROLL & GAJI */}
-          {activeTab === "payroll" && (
-            <div className="h-full p-6 lg:p-10 overflow-y-auto animate-in fade-in duration-300">
-               <div className="flex justify-between items-center mb-8">
-                  <p className="text-[11px] font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl">Jadwal Penggajian: Tanggal 25 Setiap Bulan</p>
-               </div>
+         {/* TAB 2: PAYROLL & GAJI */}
+{activeTab === "payroll" && (
+  <div className="h-full p-6 lg:p-10 overflow-y-auto animate-in fade-in duration-300">
 
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {staffList.map((staff) => (
-                     <div key={staff.id} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col group">
-                        <div className="flex items-center gap-5 mb-8">
-                           <div className="w-16 h-16 bg-slate-100 rounded-[1.25rem] flex items-center justify-center font-black text-slate-400 text-2xl group-hover:bg-[#FF0055] group-hover:text-white transition-colors duration-300 shadow-sm border border-slate-200">
-                              {staff.name[0]}
-                           </div>
-                           <div>
-                              <h3 className="text-lg font-black text-slate-800 tracking-tight">{staff.name}</h3>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{staff.role}</span>
-                           </div>
-                        </div>
-                        
-                        <div className="space-y-4 mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                           <div className="flex justify-between text-sm items-center">
-                              <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Absensi/Hadir</span>
-                              <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{staff.attend}/26 Hari</span>
-                           </div>
-                           <div className="flex justify-between items-end pt-2 border-t border-slate-200/60">
-                              <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Gaji Bersih</span>
-                              <span className="font-black text-xl text-slate-900">Rp{staff.salary.toLocaleString('id-ID')}</span>
-                           </div>
-                        </div>
-                        
-                        <div className="mt-auto">
-                           {staff.status === "paid" ? (
-                              <div className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 border border-emerald-100">
-                                 <CheckCircle2 size={16}/> Selesai Dibayarkan
-                              </div>
-                           ) : (
-                              <button onClick={() => handlePayStaff(staff.id)} className="w-full py-4 bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-[#FF0055] transition-all shadow-md">
-                                 Konfirmasi Pencairan
-                              </button>
-                           )}
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            </div>
-          )}
+    {/* HEADER */}
+    <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-8">
+      <div>
+        <h2 className="text-[22px] font-extrabold text-slate-800 tracking-tight">
+          Rekap Payroll & Absensi
+        </h2>
+        <p className="text-[12px] text-slate-500 font-medium mt-1">
+          Monitoring penggajian dan kehadiran seluruh staf operasional.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Periode Payroll
+          </p>
+          <p className="text-sm font-bold text-slate-700 mt-1">
+            {new Date().toLocaleString("id-ID", {
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* SUMMARY */}
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+
+      <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500">
+            <Wallet size={22} />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Total Gaji
+          </span>
+        </div>
+
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+          Rp
+          {staffList
+            .reduce((sum, s) => sum + s.salary, 0)
+            .toLocaleString("id-ID")}
+        </h3>
+
+        <p className="text-[11px] text-slate-400 font-medium mt-2">
+          Total pengeluaran payroll bulan ini
+        </p>
+      </div>
+
+      <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500">
+            <Users size={22} />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Total Staff
+          </span>
+        </div>
+
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+          {staffList.length} Orang
+        </h3>
+
+        <p className="text-[11px] text-slate-400 font-medium mt-2">
+          Staff aktif dalam sistem payroll
+        </p>
+      </div>
+
+      <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500">
+            <CheckCircle2 size={22} />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Sudah Dibayar
+          </span>
+        </div>
+
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+          {staffList.filter((s) => s.status === "paid").length}
+        </h3>
+
+        <p className="text-[11px] text-slate-400 font-medium mt-2">
+          Gaji berhasil dicairkan
+        </p>
+      </div>
+
+      <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500">
+            <Clock size={22} />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Menunggu
+          </span>
+        </div>
+
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+          {staffList.filter((s) => s.status !== "paid").length}
+        </h3>
+
+        <p className="text-[11px] text-slate-400 font-medium mt-2">
+          Menunggu konfirmasi pembayaran
+        </p>
+      </div>
+    </div>
+
+    {/* TABLE */}
+    <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+
+      {/* TABLE HEADER */}
+      <div className="px-8 py-6 border-b border-slate-100 bg-white">
+        <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-widest">
+          Slip Gaji & Kehadiran Karyawan
+        </h3>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[900px]">
+
+          <thead className="bg-slate-50 border-b border-slate-100">
+            <tr className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+              <th className="px-8 py-5  text-center">Karyawan</th>
+              <th className="px-8 py-5  text-center">Jabatan</th>
+              <th className="px-8 py-5  text-center">Absensi</th>
+              <th className="px-8 py-5 text-center">Gaji</th>
+              <th className="px-8 py-5 text-center">Status</th>
+              <th className="px-8 py-5 text-center">Aksi</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {staffList.map((staff, idx) => (
+              <tr
+                key={staff.id}
+                className={`
+                  transition-all
+                  hover:bg-slate-50/70
+                  border-b border-slate-100/70
+                  ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"}
+                `}
+              >
+
+                {/* STAFF */}
+                <td className="px-8 py-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-500 text-lg">
+                      {staff.name[0]}
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">
+                        {staff.name}
+                      </h4>
+
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mt-1">
+                        {staff.id}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                {/* ROLE */}
+                <td className="px-8 py-6">
+                  <span className="text-sm font-semibold text-slate-600">
+                    {staff.role}
+                  </span>
+                </td>
+
+                {/* ATTENDANCE */}
+                <td className="px-8 py-6 w-[240px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-slate-700">
+                      {staff.attend}/26 Hari
+                    </span>
+
+                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-4">
+                      {Math.round((staff.attend / 26) * 100)}%
+                    </span>
+                  </div>
+
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all"
+                      style={{
+                        width: `${(staff.attend / 26) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </td>
+
+                {/* SALARY */}
+                <td className="px-8 py-6">
+                  <span className="font-black text-[15px] text-slate-900">
+                    Rp{staff.salary.toLocaleString("id-ID")}
+                  </span>
+                </td>
+
+                {/* STATUS */}
+                <td className="px-8 py-6">
+                  {staff.status === "paid" ? (
+                    <span className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 text-[11px] font-bold uppercase tracking-widest">
+                      <CheckCircle2 size={14} />
+                      Dibayar
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 text-[11px] font-bold uppercase tracking-widest">
+                      <Clock size={14} />
+                      Pending
+                    </span>
+                  )}
+                </td>
+
+                {/* ACTION */}
+                <td className="px-8 py-6 text-center">
+                  {staff.status === "paid" ? (
+                    <button className="px-4 py-2 rounded-xl bg-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-widest cursor-default">
+                      Selesai
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handlePayStaff(staff.id)}
+                      className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-[#FF0055] text-white transition-all text-[11px] font-bold uppercase tracking-widest shadow-sm"
+                    >
+                      Cairkan
+                    </button>
+                  )}
+                </td>
+
+              </tr>
+            ))}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
           {/* TAB 3: AUDIT PEMBATALAN */}
           {activeTab === "void" && (

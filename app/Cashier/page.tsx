@@ -428,9 +428,9 @@ export default function CashierDashboard() {
                         </div>
                         <button onClick={() => handleRemoveFromCart(item.cartId)} className="text-slate-300 hover:text-rose-500 transition-colors bg-slate-50 p-1.5 rounded-full"><XCircle size={16}/></button>
                       </div>
-                      <div className="flex justify-between items-center mt-1">
+                      <div className="flex justify-between items-center mt-3 gap-4">
                         <span className="text-[15px] font-black text-[#FF0055]">{formatRupiah(item.price * item.qty)}</span>
-                        <div className="flex items-center gap-3 border border-slate-100 rounded-xl p-1 bg-slate-50">
+                        <div className="ml-4 flex items-center gap-3 border border-slate-100 rounded-xl p-1.5 bg-slate-50 shrink-0">
                            <button onClick={() => updateCartItemQty(item.cartId, item.qty - 1, item.id)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-rose-600 shadow-sm transition-colors"><Minus size={14}/></button>
                            <span className="text-[13px] font-bold w-5 text-center text-slate-800">{item.qty}</span>
                            <button onClick={() => updateCartItemQty(item.cartId, item.qty + 1, item.id)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-emerald-500 shadow-sm transition-colors"><Plus size={14}/></button>
