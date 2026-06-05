@@ -7,7 +7,7 @@ import {
   PackagePlus, History, LogOut, Boxes, XCircle, 
   Loader2, Plus, Minus, ReceiptText, HelpCircle, 
   FileDown, FileSpreadsheet, PanelLeftClose, PanelLeftOpen, 
-  UsersRound, KeyRound, ShieldAlert, Clock, Info, AlertTriangle
+  UsersRound, ShieldAlert, Clock, Info, AlertTriangle, Trash2, Wallet
 } from "lucide-react";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -56,11 +56,18 @@ export default function CashierDashboard() {
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [activeMember, setActiveMember] = useState<{name: string, discount: number, dob?: string} | null>(null);
   
+  // State Metode Pembayaran
+  const [paymentMethod, setPaymentMethod] = useState<"Cash" | "QRIS" | "Debit" | "Lainnya">("Cash");
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // Modal untuk pembayaran
+  
   const [showReceipt, setShowReceipt] = useState<any>(null); 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showHelpCenter, setShowHelpCenter] = useState(false);
+  
+  // State untuk Request Void
   const [voidTarget, setVoidTarget] = useState<any>(null); 
-  const [voidPinInput, setVoidPinInput] = useState("");
+  const [voidReason, setVoidReason] = useState("");
+  
   const [toast, setToast] = useState<{type: 'success' | 'error' | 'info' | 'warning', title: string, subtitle: string} | null>(null);
 
   const [stockType, setStockType] = useState<"masuk" | "keluar">("masuk");
@@ -190,8 +197,10 @@ export default function CashierDashboard() {
     }, 600);
   };
 
+  // Fungsi saat modal pembayaran dikonfirmasi
   const handleCheckout = () => {
     if (cart.length === 0) return;
+    setShowPaymentModal(false);
     setIsProcessingOrder(true);
     setTimeout(() => {
       const orderId = "ORD-" + Math.floor(1000 + Math.random() * 9000);
@@ -202,7 +211,8 @@ export default function CashierDashboard() {
         id: orderId, items: [...cart], member: activeMember, subtotal, 
         discountAmount: discount, grandTotal: subtotal - discount, 
         time: formatWaktu(), 
-        status: "pending" 
+        status: "pending",
+        paymentMethod: paymentMethod
       };
       
       updateSharedOrders([newOrder, ...orders]);
@@ -214,7 +224,7 @@ export default function CashierDashboard() {
       updateSharedInventory(newInv);
   
       setCart([]); setActiveMember(null); setMemberPhone("");
-      showToast("success", "Pembayaran Sukses", `Transaksi ${orderId} berhasil.`);
+      showToast("success", "Pembayaran Sukses", `Transaksi ${orderId} menggunakan ${paymentMethod} berhasil.`);
       setIsProcessingOrder(false);
       setShowReceipt(newOrder);
     }, 800);
@@ -234,7 +244,7 @@ export default function CashierDashboard() {
 
   const handleVoidRequest = (order: any) => {
     setVoidTarget(order);
-    setVoidPinInput("");
+    setVoidReason("");
   };
 
   const handleSelesaikanTransaksi = (order: any) => {
@@ -243,20 +253,15 @@ export default function CashierDashboard() {
     updateSharedOrders(updated);
   };
 
-  const submitVoid = () => {
-    if (voidPinInput === localStorage.getItem("manager_live_pin")) { 
-      const newInv = inventory.map(item => {
-        const totalQtyToReturn = voidTarget.items.filter((c: any) => c.id === item.id).reduce((sum:number, current:any) => sum + current.qty, 0);
-        return totalQtyToReturn > 0 ? { ...item, stock: item.stock + totalQtyToReturn } : item;
-      });
-      updateSharedInventory(newInv);
-      
-      const updatedOrders = orders.map(o => o.id === voidTarget.id ? { ...o, status: "voided" } : o);
-      updateSharedOrders(updatedOrders);
-      
-      showToast("success", "Dibatalkan", "Transaksi batal, stok kembali.");
-      setVoidTarget(null);
-    } else showToast("error", "Akses Ditolak", "Kata Sandi Manager salah.");
+  const submitVoidRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if(!voidReason) return showToast("error", "Data Diperlukan", "Alasan pembatalan harus diisi.");
+
+    const updatedOrders = orders.map(o => o.id === voidTarget.id ? { ...o, status: "pending_void", voidReason: voidReason } : o);
+    updateSharedOrders(updatedOrders);
+    
+    showToast("success", "Request Terkirim", "Permintaan void telah dikirim, menunggu ACC Manager.");
+    setVoidTarget(null);
   };
 
   const handleAddMember = (e: React.FormEvent) => {
@@ -278,7 +283,7 @@ export default function CashierDashboard() {
       
       {/* SIDEBAR */}
       <aside className={`bg-white flex flex-col h-full shrink-0 border-r border-slate-200 z-20 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[260px]" : "w-0 opacity-0 overflow-hidden border-none"}`}>
-        <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0">
+        <div className="h-24 flex items-center px-8 border-b border-slate-100 shrink-0 w-[260px]">
           <img src="Cashier1.png" alt="Logo Kasir" className="w-10 h-10 mr-3 object-contain drop-shadow-sm" />
           <span className="font-extrabold text-slate-800 text-xl tracking-tight whitespace-nowrap">Kasir<span className="text-[#FF0055]">.</span></span>
         </div>
@@ -441,13 +446,15 @@ export default function CashierDashboard() {
                 </div>
 
                 <div className="p-8 bg-white border-t border-slate-200">
+                  {/* Pemilihan Metode Pembayaran Dipindah ke Modal */}
+
                   <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3"><span>Subtotal</span><span className="text-slate-700">{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0))}</span></div>
                   {activeMember && <div className="flex justify-between text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-3"><span>Diskon</span><span>-{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount)}</span></div>}
                   <div className="pt-5 border-t border-slate-100 flex justify-between items-end mb-8">
                       <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Tagihan</span>
                       <span className="text-3xl font-[900] text-slate-900 tracking-tighter">{formatRupiah(cart.reduce((s,i)=>s+(i.price*i.qty),0) - (activeMember ? cart.reduce((s,i)=>s+(i.price*i.qty),0) * activeMember.discount : 0))}</span>
                   </div>
-                  <button onClick={handleCheckout} disabled={cart.length === 0 || isProcessingOrder} className={`w-full py-5 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase flex justify-center items-center gap-2 transition-all ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#FF0055] text-white hover:bg-[#D40048] shadow-lg shadow-rose-500/25'}`}>
+                  <button onClick={() => setShowPaymentModal(true)} disabled={cart.length === 0 || isProcessingOrder} className={`w-full py-5 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase flex justify-center items-center gap-2 transition-all ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#FF0055] text-white hover:bg-[#D40048] shadow-lg shadow-rose-500/25'}`}>
                     {isProcessingOrder ? <Loader2 size={18} className="animate-spin" /> : "PROSES PEMBAYARAN"}
                   </button>
                 </div>
@@ -554,7 +561,11 @@ export default function CashierDashboard() {
                            <button onClick={() => handleVoidRequest(order)} className="text-[11px] font-bold py-3 rounded-xl border border-slate-200 text-[#FF0055] hover:bg-rose-50 hover:border-rose-200 transition-all bg-white shadow-sm">Ajukan Pembatalan</button>
                            <button onClick={() => handleSelesaikanTransaksi(order)} className="text-[11px] font-bold py-3 rounded-xl bg-slate-800 text-white hover:bg-[#FF0055] transition-all shadow-md">Selesai</button>
                         </div>
-                      ) : <div className={`text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${order.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{order.status === 'completed' ? 'Selesai' : 'Batal'}</div>}
+                      ) : order.status === 'pending_void' ? (
+                         <div className="text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border bg-amber-50 text-amber-600 border-amber-100">Menunggu ACC Batal</div>
+                      ) : (
+                         <div className={`text-center py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${order.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{order.status === 'completed' ? 'Selesai' : 'Batal'}</div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -562,7 +573,7 @@ export default function CashierDashboard() {
             </div>
           )}
 
-          {/* TAB MANAJEMEN MEMBER DENGAN INPUT TANGGAL LAHIR */}
+          {/* TAB MANAJEMEN MEMBER */}
           {activeTab === "members" && (
             <div className="h-full p-10 overflow-y-auto animate-in fade-in bg-[#F4F7FA] flex gap-8">
                <div className="w-[360px] shrink-0">
@@ -623,6 +634,39 @@ export default function CashierDashboard() {
 
         {/* MODALS */}
         
+        {/* MODAL PILIHAN METODE PEMBAYARAN */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[700] flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
+              <div className="w-16 h-16 bg-slate-50 text-slate-800 rounded-full flex items-center justify-center mx-auto mb-6"><Wallet size={32}/></div>
+              <h3 className="text-center font-black text-slate-800 text-xl mb-2 tracking-tight">METODE PEMBAYARAN</h3>
+              <p className="text-center text-[11px] font-bold text-slate-400 mb-8 uppercase tracking-widest">Pilih cara pembayaran pelanggan</p>
+              
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                {["Cash", "QRIS", "Debit", "Lainnya"].map(method => (
+                  <button 
+                    key={method} 
+                    onClick={() => setPaymentMethod(method as any)}
+                    className={`py-4 rounded-xl text-[13px] font-bold transition-all border-2 ${paymentMethod === method ? 'border-[#FF0055] bg-rose-50 text-[#FF0055]' : 'border-slate-100 text-slate-500 hover:border-slate-300'}`}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-4">
+                <button onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
+                <button 
+                  onClick={handleCheckout} 
+                  className="flex-1 py-4 rounded-2xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-widest shadow-md"
+                >
+                  Konfirmasi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MODAL PILIH VARIAN */}
         {selectedProduct && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[700] flex items-center justify-center p-4 animate-in fade-in">
@@ -651,7 +695,9 @@ export default function CashierDashboard() {
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
               <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8"><CheckCircle2 size={40} strokeWidth={2}/></div>
-              <h3 className="text-center font-black text-slate-800 text-xl mb-8 tracking-tight">TRANSAKSI SUKSES</h3>
+              <h3 className="text-center font-black text-slate-800 text-xl mb-6 tracking-tight">TRANSAKSI SUKSES</h3>
+              <p className="text-center text-[10px] font-bold text-slate-400 mb-6 uppercase tracking-widest">Metode: {showReceipt.paymentMethod}</p>
+              
               <div className="bg-[#F8FAFC] p-6 rounded-2xl font-mono text-[11px] border border-slate-200 space-y-4 mb-8 text-slate-600">
                 <p className="text-center font-bold border-b border-dashed border-slate-300 pb-4 mb-4 uppercase tracking-[0.2em] text-slate-400">ROSEREVE CLINIC</p>
                 {showReceipt.items.map((c: any) => <div key={c.cartId} className="flex justify-between font-bold"><span>{c.qty}x {c.name.slice(0,15)} <span className="opacity-70">({c.variant.slice(0,3)})</span></span><span>{formatRupiah(c.price * c.qty)}</span></div>)}
@@ -662,18 +708,21 @@ export default function CashierDashboard() {
           </div>
         )}
 
-        {/* VOID PIN MODAL */}
+        {/* REQUEST VOID MODAL */}
         {voidTarget && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-in fade-in">
             <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
-              <div className="w-20 h-20 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><KeyRound size={36}/></div>
-              <h3 className="text-center font-black text-slate-800 text-lg mb-3 uppercase tracking-widest">Akses Manager</h3>
-              <p className="text-center text-[11px] font-bold text-slate-400 mb-8 uppercase tracking-wider">Masukkan Kata Sandi otorisasi pesanan <br/><span className="text-[#FF0055]">{voidTarget.id}</span></p>
-              <input type="password" maxLength={6} value={voidPinInput} onChange={(e) => setVoidPinInput(e.target.value)} autoFocus placeholder="••••••" className="w-full text-center text-4xl tracking-[0.5em] font-black py-5 bg-[#F8FAFC] rounded-2xl border-2 border-slate-200 outline-none focus:border-[#FF0055] focus:bg-white focus:ring-4 focus:ring-rose-50 text-[#FF0055] mb-8 transition-colors" />
-              <div className="flex gap-4">
-                <button onClick={() => setVoidTarget(null)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
-                <button onClick={submitVoid} className="flex-1 py-4 rounded-2xl font-bold bg-slate-800 text-white hover:bg-[#FF0055] transition-all text-[11px] uppercase tracking-widest shadow-xl">Verifikasi</button>
-              </div>
+              <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle size={36}/></div>
+              <h3 className="text-center font-black text-slate-800 text-lg mb-3 uppercase tracking-widest">Pengajuan Batal</h3>
+              <p className="text-center text-[11px] font-bold text-slate-400 mb-8 uppercase tracking-wider">Permintaan batal pesanan <span className="text-[#FF0055]">{voidTarget.id}</span> akan dikirim ke Manager.</p>
+              
+              <form onSubmit={submitVoidRequest}>
+                 <input type="text" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} autoFocus placeholder="Tuliskan Alasan Pembatalan..." className="w-full text-center text-sm font-bold py-5 bg-[#F8FAFC] rounded-2xl border-2 border-slate-200 outline-none focus:border-[#FF0055] focus:bg-white focus:ring-4 focus:ring-rose-50 text-slate-700 mb-8 transition-colors" />
+                 <div className="flex gap-4">
+                   <button type="button" onClick={() => setVoidTarget(null)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
+                   <button type="submit" className="flex-1 py-4 rounded-2xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-widest shadow-xl shadow-rose-500/20">Kirim Request</button>
+                 </div>
+              </form>
             </div>
           </div>
         )}
@@ -687,7 +736,7 @@ export default function CashierDashboard() {
                  <div className="space-y-3 mb-8">
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                        <p className="font-bold text-sm text-slate-800 mb-1">Cara membatalkan transaksi?</p>
-                       <p className="text-xs text-slate-500 leading-relaxed">Buka tab "Riwayat & Laporan", pilih transaksi "Ajukan Pembatalan", lalu minta Kata Sandi Otorisasi Manager.</p>
+                       <p className="text-xs text-slate-500 leading-relaxed">Buka tab "Riwayat & Laporan", pilih transaksi "Ajukan Pembatalan", masukkan alasan, dan tunggu Manager menyetujui pembatalan tersebut (Stok tidak akan berubah sebelum disetujui).</p>
                     </div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                        <p className="font-bold text-sm text-slate-800 mb-1">Peralatan kasir macet?</p>

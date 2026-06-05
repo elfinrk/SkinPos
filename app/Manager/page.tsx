@@ -7,7 +7,7 @@ import {
   LogOut, CheckCircle2, Clock, RefreshCw, LockKeyhole,
   XCircle, Trash2, History, Info, FileWarning, HelpCircle,
   FileDown, FileSpreadsheet, Flame, ClipboardList, UsersRound, 
-  CalendarRange, UserCheck, AlertTriangle, PanelLeftClose, PanelLeftOpen
+  CalendarRange, UserCheck, AlertTriangle, PanelLeftClose, PanelLeftOpen, Check
 } from "lucide-react";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -26,9 +26,6 @@ export default function ManagerDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "voids" | "history" | "audit">("dashboard");
   const [dateFilter, setDateFilter] = useState("today");
-  
-  const [dynamicPin, setDynamicPin] = useState("------");
-  const [countdown, setCountdown] = useState(60);
   
   const [orders, setOrders] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -71,28 +68,10 @@ export default function ManagerDashboard() {
     return () => clearInterval(interval);
   }, [isAuthorized]);
 
-  useEffect(() => {
-    if (!isAuthorized) return;
-    const generateNewPin = () => {
-      const newPin = Math.floor(100000 + Math.random() * 900000).toString();
-      setDynamicPin(newPin);
-      setCountdown(60); 
-      localStorage.setItem("manager_live_pin", newPin);
-    };
-    generateNewPin();
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) { generateNewPin(); return 60; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isAuthorized]);
-
-  // FUNGSI YANG SEBELUMNYA HILANG
+  // FUNGSI BATAL SEPIHAK (MANAGER FORCE VOID)
   const handleTolakPesanan = (orderId: string) => {
     setVoidPromptTarget(orderId);
-    setVoidReasonInput("Salah input kasir");
+    setVoidReasonInput("Dibatalkan sepihak oleh Manager");
   };
 
   const submitTolakPesanan = (e: React.FormEvent) => {
@@ -114,14 +93,46 @@ export default function ManagerDashboard() {
       const updatedOrders = orders.map(o => o.id === voidPromptTarget ? { ...o, status: "voided", voidReason: voidReasonInput } : o);
       setOrders(updatedOrders);
       localStorage.setItem("skinpos_orders", JSON.stringify(updatedOrders));
-      showToast("success", "Pesanan Ditolak", "Status diubah menjadi Batal dan stok dikembalikan.");
+      showToast("success", "Pesanan Dibatalkan", "Status diubah menjadi Batal dan stok dikembalikan.");
     }
     setVoidPromptTarget(null);
+  };
+
+  // FUNGSI ACC VOID DARI KASIR
+  const handleAccVoid = (orderId: string) => {
+    const orderToVoid = orders.find(o => o.id === orderId);
+    if(orderToVoid) {
+      const currentInvRaw = localStorage.getItem("skinpos_inventory");
+      if(currentInvRaw) {
+        let currentInv = JSON.parse(currentInvRaw);
+        const updatedInv = currentInv.map((item: any) => {
+          const totalQtyToReturn = orderToVoid.items.filter((c: any) => c.id === item.id).reduce((sum:number, current:any) => sum + current.qty, 0);
+          return totalQtyToReturn > 0 ? { ...item, stock: item.stock + totalQtyToReturn } : item;
+        });
+        localStorage.setItem("skinpos_inventory", JSON.stringify(updatedInv));
+      }
+      
+      const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: "voided" } : o);
+      setOrders(updatedOrders);
+      localStorage.setItem("skinpos_orders", JSON.stringify(updatedOrders));
+      showToast("success", "Permintaan Disetujui", "Pesanan resmi dibatalkan dan stok telah kembali.");
+    }
+  };
+
+  // FUNGSI TOLAK VOID DARI KASIR
+  const handleRejectVoid = (orderId: string) => {
+    const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: "pending", voidReason: "" } : o);
+    setOrders(updatedOrders);
+    localStorage.setItem("skinpos_orders", JSON.stringify(updatedOrders));
+    showToast("warning", "Permintaan Ditolak", "Pesanan dikembalikan ke antrean Kasir.");
   };
 
   const completedOrders = orders.filter(o => o.status === "completed");
   const voidedOrders = orders.filter(o => o.status === "voided");
   const pendingOrders = orders.filter(o => o.status === "pending");
+  const voidRequests = orders.filter(o => o.status === "pending_void");
+  
+  const activeQueue = [...pendingOrders, ...voidRequests];
   const totalRevenue = completedOrders.reduce((sum, o) => sum + o.grandTotal, 0);
 
   if (!isAuthorized) return null;
@@ -140,7 +151,7 @@ export default function ManagerDashboard() {
           <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Akses Supervisi</p>
           {[
             { id: "dashboard", icon: LayoutDashboard, label: "Analisis Bisnis" },
-            { id: "voids", icon: ShieldAlert, label: "Live Antrean", count: pendingOrders.length },
+            { id: "voids", icon: ShieldAlert, label: "Live Antrean", count: activeQueue.length },
             { id: "history", icon: History, label: "Riwayat & Laporan" },
             { id: "audit", icon: ClipboardList, label: "Audit Stok" }
           ].map((tab) => (
@@ -151,17 +162,12 @@ export default function ManagerDashboard() {
             </button>
           ))}
 
-          <div className="mt-8 mx-2 mb-4 p-5 rounded-2xl bg-rose-50 border border-rose-100 relative overflow-hidden">
-             <div className="absolute top-0 right-0 -mr-3 -mt-3 text-rose-200/50"><LockKeyhole size={80} /></div>
+          <div className="mt-8 mx-2 mb-4 p-5 rounded-2xl bg-amber-50 border border-amber-100 relative overflow-hidden">
+             <div className="absolute top-0 right-0 -mr-3 -mt-3 text-amber-200/50"><AlertTriangle size={80} /></div>
              <div className="relative z-10">
-               <p className="text-[10px] font-black text-[#FF0055] uppercase tracking-widest flex items-center gap-1.5 mb-3"><RefreshCw size={12} className={countdown < 5 ? "animate-spin text-[#FF0055]" : ""} /> Live Void PIN</p>
-               <div className="bg-white px-3 py-3 rounded-xl shadow-sm border border-rose-100 flex items-center justify-center mb-3">
-                 <h2 className="text-2xl font-black text-[#FF0055] tracking-[0.2em] ml-1 font-mono">{dynamicPin}</h2>
-               </div>
-               <div className="w-full bg-rose-200/50 rounded-full h-1.5 mb-1.5 overflow-hidden">
-                 <div className={`h-1.5 transition-all duration-1000 ${countdown < 10 ? "bg-rose-400" : "bg-[#FF0055]"}`} style={{ width: `${(countdown / 60) * 100}%` }}></div>
-               </div>
-               <p className="text-[9px] font-bold text-center uppercase tracking-widest text-rose-400">Kedaluwarsa {countdown}s</p>
+               <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5 mb-2">Request Batal</p>
+               <h2 className="text-3xl font-black text-amber-600 mb-1">{voidRequests.length}</h2>
+               <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500">Menunggu ACC</p>
              </div>
           </div>
 
@@ -229,7 +235,7 @@ export default function ManagerDashboard() {
                      </div>
                      <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
                          <div className="p-4 bg-blue-50 text-blue-500 rounded-2xl"><Users size={28}/></div>
-                         <div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Kasir Shift Saat Ini (Elberth)</p><h3 className="text-xl font-black text-slate-800">{completedOrders.length + pendingOrders.length} <span className="text-sm font-bold text-slate-400">Transaksi dilayani</span></h3></div>
+                         <div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Kasir Shift Saat Ini (Elberth)</p><h3 className="text-xl font-black text-slate-800">{activeQueue.length + completedOrders.length} <span className="text-sm font-bold text-slate-400">Transaksi dilayani</span></h3></div>
                      </div>
                    </div>
                    <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col">
@@ -244,7 +250,7 @@ export default function ManagerDashboard() {
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm ${index === 0 ? 'bg-amber-100 text-amber-600' : index === 1 ? 'bg-slate-200 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-400'}`}>#{index+1}</div>
                                 <div><p className="font-bold text-sm text-slate-800 leading-tight mb-0.5">{item.name}</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.type === "Product" ? "Produk" : item.type === "Treatment" ? "Layanan" : item.type}</p></div>
                               </div>
-                              <span className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-100">{item.sold || 0} Produk / Pcs</span>
+                              <span className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-100">{item.sold || 0} Unit</span>
                            </div>
                          ))}
                       </div>
@@ -262,18 +268,33 @@ export default function ManagerDashboard() {
                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full uppercase tracking-widest border border-amber-100">Aktif / Terkini</span>
                   </div>
                   <div className="flex-1 overflow-y-auto">
-                    {pendingOrders.length === 0 ? (
+                    {activeQueue.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-slate-300 py-20"><CheckCircle2 size={64} className="mb-4 opacity-30" strokeWidth={1.5} /><p className="font-bold tracking-[0.2em] uppercase text-xs opacity-60">Tidak ada antrean kasir</p></div>
                     ) : (
                       <table className="w-full text-left">
                         <thead><tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100"><th className="px-8 py-5">Waktu & ID</th><th className="px-8 py-5">Detail Pesanan</th><th className="px-8 py-5 text-right">Total Tagihan</th><th className="px-8 py-5 text-center">Tindakan Khusus</th></tr></thead>
                         <tbody className="divide-y divide-slate-100">
-                          {pendingOrders.map(order => (
-                            <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-8 py-6"><span className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-rose-50 text-[#FF0055] border border-rose-100">{order.id}</span><p className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time ? order.time.replace(':', '.') : ''}</p></td>
+                          {activeQueue.map(order => (
+                            <tr key={order.id} className={`hover:bg-slate-50 transition-colors ${order.status === 'pending_void' ? 'bg-amber-50/30' : ''}`}>
+                              <td className="px-8 py-6">
+                                 <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black border ${order.status === 'pending_void' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-rose-50 text-[#FF0055] border-rose-100'}`}>{order.id}</span>
+                                 <p className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1.5"><Clock size={12}/> {order.time ? order.time.replace(':', '.') : ''}</p>
+                              </td>
                               <td className="px-8 py-6"><div className="space-y-1.5">{order.items.map((it: any, i: number) => (<p key={i} className="text-xs font-bold text-slate-700">{it.qty}x {it.name} <span className="text-slate-400 font-medium">({it.variant || 'Normal'})</span></p>))}</div></td>
                               <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">Rp{order.grandTotal.toLocaleString('id-ID')}</td>
-                              <td className="px-8 py-6 text-center"><button onClick={() => handleTolakPesanan(order.id)} className="px-4 py-2.5 bg-rose-50 text-[#FF0055] text-[11px] font-bold tracking-wider uppercase rounded-xl hover:bg-[#FF0055] hover:text-white transition-all shadow-sm border border-rose-100 hover:border-transparent flex items-center justify-center gap-2 mx-auto"><Trash2 size={14}/> Tolak / Batalkan</button></td>
+                              <td className="px-8 py-6 text-center">
+                                 {order.status === "pending_void" ? (
+                                    <div className="flex flex-col gap-2 animate-in zoom-in-95">
+                                       <span className="text-[10px] font-bold text-amber-600 mb-1 leading-tight">Alasan:<br/>"{order.voidReason}"</span>
+                                       <div className="flex justify-center gap-2">
+                                          <button onClick={() => handleRejectVoid(order.id)} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-slate-100 transition-all shadow-sm"><XCircle size={14} className="inline mr-1"/> Tolak</button>
+                                          <button onClick={() => handleAccVoid(order.id)} className="px-4 py-2 bg-[#FF0055] text-white text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-[#D40048] transition-all shadow-sm"><Check size={14} className="inline mr-1"/> ACC Batal</button>
+                                       </div>
+                                    </div>
+                                 ) : (
+                                    <button onClick={() => handleTolakPesanan(order.id)} className="px-4 py-2.5 bg-rose-50 text-[#FF0055] text-[11px] font-bold tracking-wider uppercase rounded-xl hover:bg-[#FF0055] hover:text-white transition-all shadow-sm border border-rose-100 hover:border-transparent flex items-center justify-center gap-2 mx-auto"><Trash2 size={14}/> Batalkan Sepihak</button>
+                                 )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -349,12 +370,12 @@ export default function ManagerDashboard() {
           )}
         </div>
 
-        {/* MODAL ALASAN TOLAK PESANAN */}
+        {/* MODAL ALASAN TOLAK PESANAN SEPIHAK OLEH MANAGER */}
         {voidPromptTarget && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[900] flex items-center justify-center p-4 animate-in fade-in">
               <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in-95 border border-slate-100">
                  <div className="w-16 h-16 bg-rose-50 text-[#FF0055] rounded-full flex items-center justify-center mx-auto mb-6"><ShieldAlert size={32}/></div>
-                 <h3 className="text-center font-black text-slate-800 text-xl mb-2">Alasan Pembatalan</h3>
+                 <h3 className="text-center font-black text-slate-800 text-xl mb-2">Batalkan Sepihak</h3>
                  <p className="text-center text-[12px] font-bold text-slate-400 mb-6 uppercase tracking-widest">Pesanan {voidPromptTarget}</p>
                  <form onSubmit={submitTolakPesanan} className="space-y-6">
                     <div>
@@ -362,7 +383,7 @@ export default function ManagerDashboard() {
                     </div>
                     <div className="flex gap-4">
                        <button type="button" onClick={() => setVoidPromptTarget(null)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px] uppercase tracking-widest">Batal</button>
-                       <button type="submit" className="flex-1 py-4 rounded-2xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-widest shadow-md">Tolak Pesanan</button>
+                       <button type="submit" className="flex-1 py-4 rounded-2xl font-bold bg-[#FF0055] text-white hover:bg-[#D40048] transition-all text-[11px] uppercase tracking-widest shadow-md">Batalkan</button>
                     </div>
                  </form>
               </div>
@@ -376,7 +397,7 @@ export default function ManagerDashboard() {
                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><HelpCircle size={32}/></div>
                  <h3 className="text-center font-black text-slate-800 text-xl mb-6">Pusat Bantuan Manager</h3>
                  <div className="space-y-3 mb-8">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100"><p className="font-bold text-sm text-slate-800 mb-1">Otorisasi Void Gagal?</p><p className="text-xs text-slate-500 leading-relaxed">Pastikan kasir memasukkan "Live Void PIN" yang tertera di sidebar kiri Anda. PIN akan berganti setiap 60 detik.</p></div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100"><p className="font-bold text-sm text-slate-800 mb-1">Kasir Meminta Batal?</p><p className="text-xs text-slate-500 leading-relaxed">Cek tab Live Antrean Kasir. Permintaan dari kasir akan muncul dengan tombol ACC atau Tolak.</p></div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100"><p className="font-bold text-sm text-slate-800 mb-1">Laporan Excel Error?</p><p className="text-xs text-slate-500 leading-relaxed">Pastikan perangkat Anda terkoneksi internet. Jika masih terkendala, hubungi IT Support.</p></div>
                  </div>
                  <button onClick={() => setShowHelpCenter(false)} className="w-full py-4 rounded-2xl font-bold bg-slate-800 text-white hover:bg-[#FF0055] transition-all text-[11px] uppercase tracking-widest shadow-md">Tutup</button>
